@@ -1,12 +1,14 @@
-/*
- * @Author: chengyangkj chengyangkj@qq.com
- * @Date: 2023-10-06 07:12:50
- * @LastEditors: chengyangkj chengyangkj@qq.com
- * @LastEditTime: 2023-10-06 14:02:27
- * @FilePath: /ROS2_Qt5_Gui_App/src/ MainWindow.cpp
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
- * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+/**
+ * @file mainwindow.cpp
+ * @brief MainWindow 主窗口实现
+ *
+ * 职责：
+ *   - UI 布局初始化（工具栏、Dock 面板、信号槽连接）
+ *   - 通信通道管理（打开/关闭/注册消息订阅）
+ *   - 地图加载与保存
+ *   - 窗口状态持久化
  */
+
 #include "mainwindow.h"
 #include <QDebug>
 #include <iostream>
@@ -31,6 +33,13 @@
 #include "display/manager/view_manager.h"
 #include <QTimer>
 using namespace ads;
+
+
+////////////////////////////////////////////////////////////////////////////
+/// 构造 / 析构
+////////////////////////////////////////////////////////////////////////////
+
+// 初始化主窗口：注册 Qt 元类型 → 构建 UI → 打开通信通道 → 恢复窗口状态 → 加载上次地图
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
   Q_INIT_RESOURCE(images);
@@ -64,86 +73,47 @@ MainWindow::MainWindow(QWidget *parent)
     }
   });
 }
-bool MainWindow::openChannel() {
-  if (channel_manager_.OpenChannelAuto()) {
-    registerChannel();
-    
-    // 延迟检查连接状态（连接超时是5秒）
-    auto* channel = channel_manager_.GetChannel();
-    if (channel) {
-      QTimer::singleShot(6000, this, [this, channel]() {
-        if (channel->IsConnectionFailed()) {
-          std::string error_msg = channel->GetConnectionError();
-          std::string channel_name = channel->Name();
-          if (!error_msg.empty()) {
-            QMessageBox::critical(this, QString::fromStdString(channel_name) + " 连接失败", 
-                                  QString::fromStdString(error_msg),
-                                  QMessageBox::Ok);
-          } else {
-            QMessageBox::critical(this, QString::fromStdString(channel_name) + " 连接失败", 
-                                  "无法连接到 " + QString::fromStdString(channel_name) + " 服务器。\n\n请检查：\n"
-                                  "1. 服务器是否正在运行\n"
-                                  "2. 配置是否正确\n"
-                                  "3. 网络连接是否正常",
-                                  QMessageBox::Ok);
-          }
-        }
-      });
-    }
-    
-    return true;
-  }
-  return false;
-}
-bool MainWindow::openChannel(const std::string &channel_name) {
-  if (channel_manager_.OpenChannel(channel_name)) {
-    registerChannel();
-    return true;
-  }
-  return false;
-}
-void MainWindow::registerChannel() {
-  SUBSCRIBE(MSG_ID_ODOM_POSE, [this](const RobotState& data) {
-    updateOdomInfo(data);
-  });
 
-  SUBSCRIBE(MSG_ID_ROBOT_POSE, [this](const RobotPose& robot_pose) {
-      nav_goal_table_view_->UpdateRobotPose(robot_pose);
-      Display::ViewManager* view_manager = dynamic_cast<Display::ViewManager*>(display_manager_->GetViewPtr());
-      if (view_manager) {
-        view_manager->UpdateRobotPos("Robot: (" + QString::number(robot_pose.x, 'f', 2) + ", " + 
-                                     QString::number(robot_pose.y, 'f', 2) + ", " + 
-                                     QString::number(robot_pose.theta, 'f', 2) + ")");
-      }
-  });
-
-  SUBSCRIBE(MSG_ID_BATTERY_STATE, [this](const std::map<std::string, std::string>& map) {
-    this->SlotSetBatteryStatus(std::stod(map.at("percent")),
-                               std::stod(map.at("voltage")));
-  });
-
-  SUBSCRIBE(MSG_ID_IMAGE, [this](const std::pair<std::string, std::shared_ptr<cv::Mat>>& location_to_mat) {
-      this->SlotRecvImage(location_to_mat.first, location_to_mat.second);
-  });
-}
-
-
-void MainWindow::RecvChannelMsg(const MsgId &id, const std::any &data) {
-  // 保留此方法以兼容现有代码，但不再使用
-  // 数据现在通过 message_bus 订阅接收
-}
-
-
-void MainWindow::SlotRecvImage(const std::string &location, std::shared_ptr<cv::Mat> data) {
-  if (image_frame_map_.count(location)) {
-    QImage image(data->data, data->cols, data->rows, data->step[0], QImage::Format_RGB888);
-    image_frame_map_[location]->setImage(image);
-  }
-}
-void MainWindow::closeChannel() { channel_manager_.CloseChannel(); }
 MainWindow::~MainWindow() { delete ui; }
+
+// 工具栏按钮集合（用于跨方法传递局部控件指针）
+struct MainWindow::MapToolBarButtons {
+  QToolButton *reloc = nullptr;
+  QToolButton *edit_map = nullptr;
+  QToolButton *open_map = nullptr;
+  QToolButton *save_map = nullptr;
+  QToolButton *re_save_map = nullptr;
+};
+
+struct MainWindow::EditToolBarWidgets {
+  QWidget *container = nullptr;
+  QToolButton *normal_cursor = nullptr;
+  QToolButton *add_point = nullptr;
+  QToolButton *add_topology_path = nullptr;
+  QToolButton *add_region = nullptr;
+  QToolButton *erase = nullptr;
+  QToolButton *draw_pen = nullptr;
+  QToolButton *draw_line = nullptr;
+};
+
+
+////////////////////////////////////////////////////////////////////////////
+/// UI 初始化
+////////////////////////////////////////////////////////////////////////////
+
+// UI 初始化入口：调度各子方法完成完整布局
 void MainWindow::setupUi() {
   ui->setupUi(this);
+  auto [center_layout, center_h_layout] = initGlobalStyle();
+  auto toolbar_btns = createMapToolBar(center_layout);
+  auto edit_widgets = createEditToolBar(center_h_layout);
+  center_layout->addLayout(center_h_layout);
+  createDockPanels(center_layout, center_h_layout);
+  connectSignals(toolbar_btns, edit_widgets);
+}
+
+// 全局样式 + DockManager 配置，返回中心布局
+std::pair<QVBoxLayout*, QHBoxLayout*> MainWindow::initGlobalStyle() {
   
   // 设置主窗体现代化样式
   this->setStyleSheet(R"(
@@ -212,7 +182,12 @@ void MainWindow::setupUi() {
   QVBoxLayout *center_layout = new QVBoxLayout();    //垂直
   QHBoxLayout *center_h_layout = new QHBoxLayout();  //水平
 
-  ///////////////////////////////////////////////////////////////地图工具栏
+  return {center_layout, center_h_layout};
+}
+
+// 创建顶部地图工具栏（视图菜单、重定位、编辑、打开/保存地图、电池）
+MainWindow::MapToolBarButtons MainWindow::createMapToolBar(QVBoxLayout* center_layout) {
+  // ── 顶部地图工具栏 ──────────────────────────────────────────
   QHBoxLayout *horizontalLayout_tools = new QHBoxLayout();
   horizontalLayout_tools->setSpacing(6);
   horizontalLayout_tools->setObjectName(
@@ -324,7 +299,7 @@ void MainWindow::setupUi() {
       new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
 
-  ///////////////////////////////////////////////////////////////////电池电量 - 现代化设计
+  // ── 电池电量指示器 ─────────────────────────────────────────
   battery_bar_ = new QProgressBar();
   battery_bar_->setObjectName(QString::fromUtf8("battery_bar_"));
   battery_bar_->setMaximumSize(QSize(120, 24));
@@ -373,7 +348,12 @@ void MainWindow::setupUi() {
   horizontalLayout_tools->addWidget(label_power_);
   SlotSetBatteryStatus(0, 0);
   
-  //////////////////////////////////////////////////////////////编辑地图工具栏 - 现代化设计
+  return {reloc_btn, edit_map_btn, open_map_btn, save_map_btn, re_save_map_btn};
+}
+
+// 创建左侧地图编辑工具栏（鼠标、点位、拓扑连接、橡皮擦、画笔、线段）
+MainWindow::EditToolBarWidgets MainWindow::createEditToolBar(QHBoxLayout* center_h_layout) {
+  // ── 左侧地图编辑工具栏 ────────────────────────────────────
   QWidget *tools_edit_map_widget = new QWidget();
   tools_edit_map_widget->setStyleSheet(R"(
     QWidget {
@@ -540,9 +520,15 @@ void MainWindow::setupUi() {
   
   tools_edit_map_widget->hide();
   center_h_layout->addWidget(tools_edit_map_widget);
-  center_layout->addLayout(center_h_layout);
 
-  /////////////////////////////////////////////////////////////////////////地图显示
+
+  return {tools_edit_map_widget, normal_cursor_btn, add_point_btn,
+          add_topology_path_btn, add_region_btn, erase_btn, draw_pen_btn, draw_line_btn};
+}
+
+// 创建中心区域 + 所有 Dock 面板（仪表盘、速度控制、图层配置、导航任务、图像）
+void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* center_h_layout) {
+  // ── 中心地图显示区域 ──────────────────────────────────────
   display_manager_ = new Display::DisplayManager();
   center_h_layout->addWidget(display_manager_->GetViewPtr());
 
@@ -551,7 +537,7 @@ void MainWindow::setupUi() {
   center_layout->setContentsMargins(0, 0, 0, 5);
   center_layout->setSpacing(5);
 
-  /////////////////////////////////////////////////中心主窗体
+  // ── 中心主窗体（Dock 容器）────────────────────────────────
   QWidget *center_widget = new QWidget();
   center_widget->setStyleSheet(R"(
     QWidget {
@@ -564,7 +550,7 @@ void MainWindow::setupUi() {
   center_docker_area_ = dock_manager_->setCentralWidget(CentralDockWidget);
   center_docker_area_->setAllowedAreas(DockWidgetArea::OuterDockAreas);
 
-  //////////////////////////////////////////////////////////速度仪表盘
+  // ── 速度仪表盘 Dock ───────────────────────────────────────
   ads::CDockWidget *DashBoardDockWidget = new ads::CDockWidget("DashBoard");
   QWidget *speed_dashboard_widget = new QWidget();
   DashBoardDockWidget->setWidget(speed_dashboard_widget);
@@ -574,7 +560,7 @@ void MainWindow::setupUi() {
                                    DashBoardDockWidget, center_docker_area_);
   ui->menuView->addAction(DashBoardDockWidget->toggleViewAction());
 
-  ////////////////////////////////////////////////////////速度控制
+  // ── 速度控制 Dock ─────────────────────────────────────────
   speed_ctrl_widget_ = new SpeedCtrlWidget();
   connect(speed_ctrl_widget_, &SpeedCtrlWidget::signalControlSpeed,
           [this](const RobotSpeed &speed) {
@@ -587,7 +573,7 @@ void MainWindow::setupUi() {
                                    SpeedCtrlDockWidget, dashboard_area);
   ui->menuView->addAction(SpeedCtrlDockWidget->toggleViewAction());
 
-  ////////////////////////////////////////////////////////图层配置管理
+  // ── 图层配置管理 Dock ─────────────────────────────────────
   DisplayConfigWidget *display_config_widget_ = new DisplayConfigWidget();
   display_config_widget_->SetDisplayManager(display_manager_);
   display_config_widget_->SetChannelList(channel_manager_.DiscoveryAllChannel());
@@ -602,7 +588,7 @@ void MainWindow::setupUi() {
   DisplayConfigDockWidget->toggleView(true);
   ui->menuView->addAction(DisplayConfigDockWidget->toggleViewAction());
 
-  /////////////////////////////////////////////////////////导航任务列表
+  // ── 导航任务列表 Dock ─────────────────────────────────────
   QWidget *task_list_widget = new QWidget();
   nav_goal_table_view_ = new NavGoalTableView();
   QVBoxLayout *horizontalLayout_13 = new QVBoxLayout();
@@ -755,7 +741,7 @@ void MainWindow::setupUi() {
       nav_goal_table_view_,
       SLOT(UpdateSelectPoint(const TopologyMap::PointInfo &)));
 
-  //////////////////////////////////////////////////////图片
+  // ── 图像显示窗口（根据配置动态创建）─────────────────────
 
   for (auto one_image : Config::ConfigManager::Instance()->GetRootConfig().images) {
     LOG_INFO("init image window location:" << one_image.location << " topic:" << one_image.topic);
@@ -767,7 +753,26 @@ void MainWindow::setupUi() {
     ui->menuView->addAction(dock_widget->toggleViewAction());
   }
 
-  //////////////////////////////////////////////////////槽链接
+}
+
+// 连接所有信号槽
+void MainWindow::connectSignals(const MapToolBarButtons& tb, const EditToolBarWidgets& et) {
+  // 从结构体解包按钮指针（保持原代码最小改动）
+  auto* reloc_btn = tb.reloc;
+  auto* edit_map_btn = tb.edit_map;
+  auto* open_map_btn = tb.open_map;
+  auto* save_map_btn = tb.save_map;
+  auto* re_save_map_btn = tb.re_save_map;
+  auto* tools_edit_map_widget = et.container;
+  auto* normal_cursor_btn = et.normal_cursor;
+  auto* add_point_btn = et.add_point;
+  auto* add_topology_path_btn = et.add_topology_path;
+  auto* add_region_btn = et.add_region;
+  auto* erase_btn = et.erase;
+  auto* draw_pen_btn = et.draw_pen;
+  auto* draw_line_btn = et.draw_line;
+
+  // ── 信号槽连接 ────────────────────────────────────────────
 
   connect(this, SIGNAL(OnRecvChannelData(const MsgId &, const std::any &)),
           this, SLOT(RecvChannelMsg(const MsgId &, const std::any &)), Qt::BlockingQueuedConnection);
@@ -939,31 +944,88 @@ void MainWindow::setupUi() {
           SLOT(signalCursorPose(QPointF)));
 }
 
-void MainWindow::signalCursorPose(QPointF pos) {
-  basic::Point mapPos =
-      display_manager_->mapPose2Word(basic::Point(pos.x(), pos.y()));
-  Display::ViewManager* view_manager = dynamic_cast<Display::ViewManager*>(display_manager_->GetViewPtr());
-  if (view_manager) {
-    view_manager->UpdateMapPos("Map: (" + QString::number(mapPos.x, 'f', 2) +
-                               ", " + QString::number(mapPos.y, 'f', 2) + ")");
-    view_manager->UpdateScenePos("Scene: (" + QString::number(pos.x(), 'f', 2) +
-                                 ", " + QString::number(pos.y(), 'f', 2) + ")");
+
+////////////////////////////////////////////////////////////////////////////
+/// 通信通道管理
+////////////////////////////////////////////////////////////////////////////
+
+// 自动检测并打开通信通道，连接成功后延迟 6s 检查连接状态
+bool MainWindow::openChannel() {
+  if (channel_manager_.OpenChannelAuto()) {
+    registerChannel();
+    
+    // 延迟检查连接状态（连接超时是5秒）
+    auto* channel = channel_manager_.GetChannel();
+    if (channel) {
+      QTimer::singleShot(6000, this, [this, channel]() {
+        if (channel->IsConnectionFailed()) {
+          std::string error_msg = channel->GetConnectionError();
+          std::string channel_name = channel->Name();
+          if (!error_msg.empty()) {
+            QMessageBox::critical(this, QString::fromStdString(channel_name) + " 连接失败", 
+                                  QString::fromStdString(error_msg),
+                                  QMessageBox::Ok);
+          } else {
+            QMessageBox::critical(this, QString::fromStdString(channel_name) + " 连接失败", 
+                                  "无法连接到 " + QString::fromStdString(channel_name) + " 服务器。\n\n请检查：\n"
+                                  "1. 服务器是否正在运行\n"
+                                  "2. 配置是否正确\n"
+                                  "3. 网络连接是否正常",
+                                  QMessageBox::Ok);
+          }
+        }
+      });
+    }
+    
+    return true;
   }
+  return false;
 }
 
-//============================================================================
-void MainWindow::closeEvent(QCloseEvent *event) {
-  // Delete dock manager here to delete all floating widgets. This ensures
-  // that all top level windows of the dock manager are properly closed
-  // write state
-
-  disconnect(this, SIGNAL(OnRecvChannelData(const MsgId &, const std::any &)),
-             this, SLOT(RecvChannelMsg(const MsgId &, const std::any &)));
-  SaveState();
-  dock_manager_->deleteLater();
-  QMainWindow::closeEvent(event);
-  LOG_INFO("ros qt5 gui app close!");
+// 按指定名称打开通信通道
+bool MainWindow::openChannel(const std::string &channel_name) {
+  if (channel_manager_.OpenChannel(channel_name)) {
+    registerChannel();
+    return true;
+  }
+  return false;
 }
+
+// 关闭当前通信通道
+void MainWindow::closeChannel() { channel_manager_.CloseChannel(); }
+
+// 注册消息总线订阅：里程计、机器人位姿、电池状态、图像数据
+void MainWindow::registerChannel() {
+  SUBSCRIBE(MSG_ID_ODOM_POSE, [this](const RobotState& data) {
+    updateOdomInfo(data);
+  });
+
+  SUBSCRIBE(MSG_ID_ROBOT_POSE, [this](const RobotPose& robot_pose) {
+      nav_goal_table_view_->UpdateRobotPose(robot_pose);
+      Display::ViewManager* view_manager = dynamic_cast<Display::ViewManager*>(display_manager_->GetViewPtr());
+      if (view_manager) {
+        view_manager->UpdateRobotPos("Robot: (" + QString::number(robot_pose.x, 'f', 2) + ", " + 
+                                     QString::number(robot_pose.y, 'f', 2) + ", " + 
+                                     QString::number(robot_pose.theta, 'f', 2) + ")");
+      }
+  });
+
+  SUBSCRIBE(MSG_ID_BATTERY_STATE, [this](const std::map<std::string, std::string>& map) {
+    this->SlotSetBatteryStatus(std::stod(map.at("percent")),
+                               std::stod(map.at("voltage")));
+  });
+
+  SUBSCRIBE(MSG_ID_IMAGE, [this](const std::pair<std::string, std::shared_ptr<cv::Mat>>& location_to_mat) {
+      this->SlotRecvImage(location_to_mat.first, location_to_mat.second);
+  });
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+/// 窗口状态持久化
+////////////////////////////////////////////////////////////////////////////
+
+// 保存窗口几何信息和 Dock 布局到 state.ini
 void MainWindow::SaveState() {
   QSettings settings("state.ini", QSettings::IniFormat);
   settings.setValue("mainWindow/Geometry", this->saveGeometry());
@@ -971,6 +1033,8 @@ void MainWindow::SaveState() {
   dock_manager_->addPerspective("history");
   dock_manager_->savePerspectives(settings);
 }
+
+// 从 state.ini 恢复窗口几何信息和 Dock 布局
 
 //============================================================================
 void MainWindow::RestoreState() {
@@ -980,43 +1044,14 @@ void MainWindow::RestoreState() {
   dock_manager_->loadPerspectives(settings);
   dock_manager_->openPerspective("history");
 }
-void MainWindow::updateOdomInfo(RobotState state) {
-  // 转向灯
-  //   if (state.w > 0.1) {
-  //     ui->label_turnLeft->setPixmap(
-  //         QPixmap::fromImage(QImage("://images/turnLeft_hl.png")));
-  //   } else if (state.w < -0.1) {
-  //     ui->label_turnRight->setPixmap(
-  //         QPixmap::fromImage(QImage("://images/turnRight_hl.png")));
-  //   } else {
-  //     ui->label_turnLeft->setPixmap(
-  //         QPixmap::fromImage(QImage("://images/turnLeft_l.png")));
-  //     ui->label_turnRight->setPixmap(
-  //         QPixmap::fromImage(QImage("://images/turnRight_l.png")));
-  //   }
-  //   // 仪表盘
-  speed_dash_board_->set_speed(abs(state.vx * 100));
-  if (state.vx > 0.001) {
-    speed_dash_board_->set_gear(DashBoard::kGear_D);
-  } else if (state.vx < -0.001) {
-    speed_dash_board_->set_gear(DashBoard::kGear_R);
-  } else {
-    speed_dash_board_->set_gear(DashBoard::kGear_N);
-  }
-  //   QString number = QString::number(abs(state.vx * 100)).mid(0, 2);
-  //   if (number[1] == ".") {
-  //     number = number.mid(0, 1);
-  //   }
-  //  ui->label_speed->setText(number);
-  //  ui->mapViz->grab().save("/home/chengyangkj/test.jpg");
-  //  QImage image(mysize,QImage::Format_RGB32);
-  //           QPainter painter(&image);
-  //           myscene->render(&painter);   //关键函数
-}
-void MainWindow::SlotSetBatteryStatus(double percent, double voltage) {
-  battery_bar_->setValue(percent);
-  label_power_->setText(QString::number(voltage, 'f', 2) + "V");
-}
+
+
+////////////////////////////////////////////////////////////////////////////
+/// 地图操作
+////////////////////////////////////////////////////////////////////////////
+
+// 加载地图文件（支持 .yaml 栅格地图和 .topology 拓扑地图）
+// 加载 yaml 时会自动查找同名 .topology 文件一并加载
 
 bool MainWindow::LoadMap(const std::string& file_path) {
   if (file_path.empty()) {
@@ -1070,4 +1105,81 @@ bool MainWindow::LoadMap(const std::string& file_path) {
   }
   
   return false;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+/// 槽函数 / 数据接收
+////////////////////////////////////////////////////////////////////////////
+
+// [已废弃] 保留以兼容旧代码，数据现通过 message_bus 订阅
+
+
+void MainWindow::RecvChannelMsg(const MsgId &id, const std::any &data) {
+  // 保留此方法以兼容现有代码，但不再使用
+  // 数据现在通过 message_bus 订阅接收
+}
+
+// 接收图像数据并更新对应位置的图像显示控件
+
+
+void MainWindow::SlotRecvImage(const std::string &location, std::shared_ptr<cv::Mat> data) {
+  if (image_frame_map_.count(location)) {
+    QImage image(data->data, data->cols, data->rows, data->step[0], QImage::Format_RGB888);
+    image_frame_map_[location]->setImage(image);
+  }
+}
+
+// 根据里程计数据更新速度仪表盘：前进(D档)、后退(R档)、静止(N档)
+void MainWindow::updateOdomInfo(RobotState state) {
+  speed_dash_board_->set_speed(abs(state.vx * 100));
+  if (state.vx > 0.001) {
+    speed_dash_board_->set_gear(DashBoard::kGear_D);
+  } else if (state.vx < -0.001) {
+    speed_dash_board_->set_gear(DashBoard::kGear_R);
+  } else {
+    speed_dash_board_->set_gear(DashBoard::kGear_N);
+  }
+}
+
+// 更新电池进度条和电压标签
+void MainWindow::SlotSetBatteryStatus(double percent, double voltage) {
+  battery_bar_->setValue(percent);
+  label_power_->setText(QString::number(voltage, 'f', 2) + "V");
+}
+
+// 鼠标在地图上移动时，更新状态栏的地图坐标和场景坐标
+
+void MainWindow::signalCursorPose(QPointF pos) {
+  basic::Point mapPos =
+      display_manager_->mapPose2Word(basic::Point(pos.x(), pos.y()));
+  Display::ViewManager* view_manager = dynamic_cast<Display::ViewManager*>(display_manager_->GetViewPtr());
+  if (view_manager) {
+    view_manager->UpdateMapPos("Map: (" + QString::number(mapPos.x, 'f', 2) +
+                               ", " + QString::number(mapPos.y, 'f', 2) + ")");
+    view_manager->UpdateScenePos("Scene: (" + QString::number(pos.x(), 'f', 2) +
+                                 ", " + QString::number(pos.y(), 'f', 2) + ")");
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+/// 事件处理
+////////////////////////////////////////////////////////////////////////////
+
+// 窗口关闭事件：断开信号 → 关闭通道 → 保存状态 → 销毁 DockManager
+
+//============================================================================
+void MainWindow::closeEvent(QCloseEvent *event) {
+  // Delete dock manager here to delete all floating widgets. This ensures
+  // that all top level windows of the dock manager are properly closed
+  // write state
+
+  disconnect(this, SIGNAL(OnRecvChannelData(const MsgId &, const std::any &)),
+             this, SLOT(RecvChannelMsg(const MsgId &, const std::any &)));
+  closeChannel();
+  SaveState();
+  dock_manager_->deleteLater();
+  QMainWindow::closeEvent(event);
+  LOG_INFO("ros qt5 gui app close!");
 }

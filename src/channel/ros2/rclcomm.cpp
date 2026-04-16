@@ -14,21 +14,33 @@
 #include "logger/logger.h"
 #include "core/framework/framework.h"
 #include "msg/msg_info.h"
+#include "nodeGroup/node_group.h"
+
+
+
 rclcomm::rclcomm() {
+  // 导航指令话题
   SET_DEFAULT_TOPIC_NAME(DISPLAY_GOAL, "/goal_pose")
   SET_DEFAULT_TOPIC_NAME(MSG_ID_SET_RELOC_POSE, "/initialpose")
+  SET_DEFAULT_TOPIC_NAME(MSG_ID_SET_ROBOT_SPEED, "/cmd_vel")
+
+  // 地图话题
   SET_DEFAULT_TOPIC_NAME(DISPLAY_MAP, "/map")
   SET_DEFAULT_TOPIC_NAME(DISPLAY_LOCAL_COST_MAP, "/local_costmap/costmap")
   SET_DEFAULT_TOPIC_NAME(DISPLAY_GLOBAL_COST_MAP, "/global_costmap/costmap")
-  SET_DEFAULT_TOPIC_NAME(DISPLAY_LASER, "/scan")
-  SET_DEFAULT_TOPIC_NAME(DISPLAY_GLOBAL_PATH, "/plan")
-  SET_DEFAULT_TOPIC_NAME(DISPLAY_LOCAL_PATH, "/local_plan")
-  SET_DEFAULT_TOPIC_NAME(DISPLAY_ROBOT, "/odom")
-  SET_DEFAULT_TOPIC_NAME(MSG_ID_SET_ROBOT_SPEED, "/cmd_vel")
-  SET_DEFAULT_TOPIC_NAME(MSG_ID_BATTERY_STATE, "/battery")
-  SET_DEFAULT_TOPIC_NAME(DISPLAY_ROBOT_FOOTPRINT, "/local_costmap/published_footprint")
   SET_DEFAULT_TOPIC_NAME(DISPLAY_TOPOLOGY_MAP, "/map/topology")
   SET_DEFAULT_TOPIC_NAME(MSG_ID_TOPOLOGY_MAP_UPDATE, "/map/topology/update")
+
+  // 传感器 & 状态话题
+  SET_DEFAULT_TOPIC_NAME(DISPLAY_LASER, "/scan")
+  SET_DEFAULT_TOPIC_NAME(DISPLAY_ROBOT, "/odom")
+  SET_DEFAULT_TOPIC_NAME(MSG_ID_BATTERY_STATE, "/battery")
+  SET_DEFAULT_TOPIC_NAME(DISPLAY_ROBOT_FOOTPRINT, "/local_costmap/published_footprint")
+
+  // 路径规划话题
+  SET_DEFAULT_TOPIC_NAME(DISPLAY_GLOBAL_PATH, "/plan")
+  SET_DEFAULT_TOPIC_NAME(DISPLAY_LOCAL_PATH, "/local_plan")
+
   SET_DEFAULT_KEY_VALUE("BaseFrameId", "base_link")
   if (Config::ConfigManager::Instance()->GetRootConfig().images.empty()) {
     Config::ConfigManager::Instance()->GetRootConfig().images.push_back(
@@ -38,12 +50,17 @@ rclcomm::rclcomm() {
   }
   Config::ConfigManager::Instance()->StoreConfig();
 }
+
+
 bool rclcomm::Start() {
+  // ---- 1. 初始化 ROS2 节点和多线程执行器 ----
   rclcpp::init(0, nullptr);
   m_executor = new rclcpp::executors::MultiThreadedExecutor;
 
   node = rclcpp::Node::make_shared("ros_qt5_gui_app");
   m_executor->add_node(node);
+
+  // 回调组：laser 独占一组，避免与其他回调竞争
   callback_group_laser =
       node->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   callback_group_other =
@@ -54,6 +71,7 @@ bool rclcomm::Start() {
   auto sub_laser_obt = rclcpp::SubscriptionOptions();
   sub_laser_obt.callback_group = callback_group_laser;
 
+  // ---- 2. 创建 Publishers ----
   nav_goal_publisher_ = node->create_publisher<geometry_msgs::msg::PoseStamped>(
       GET_TOPIC_NAME(DISPLAY_GOAL), 10);
   reloc_pose_publisher_ =
@@ -61,6 +79,8 @@ bool rclcomm::Start() {
           GET_TOPIC_NAME(MSG_ID_SET_RELOC_POSE), 10);
   speed_publisher_ = node->create_publisher<geometry_msgs::msg::Twist>(
       GET_TOPIC_NAME(MSG_ID_SET_ROBOT_SPEED), 10);
+  // ---- 3. 创建 Subscribers ----
+  // 地图类（transient_local QoS 确保收到最新地图）
   map_subscriber_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(
       GET_TOPIC_NAME(DISPLAY_MAP),
       rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local(),
@@ -80,6 +100,7 @@ bool rclcomm::Start() {
                     std::placeholders::_1),
           sub1_obt);
 
+  // 传感器类
   laser_scan_subscriber_ =
       node->create_subscription<sensor_msgs::msg::LaserScan>(
           GET_TOPIC_NAME(DISPLAY_LASER), 20,
@@ -90,6 +111,7 @@ bool rclcomm::Start() {
           GET_TOPIC_NAME(MSG_ID_BATTERY_STATE), 1,
           std::bind(&rclcomm::BatteryCallback, this, std::placeholders::_1),
           sub1_obt);
+  // 路径类
   global_path_subscriber_ = node->create_subscription<nav_msgs::msg::Path>(
       GET_TOPIC_NAME(DISPLAY_GLOBAL_PATH), 20,
       std::bind(&rclcomm::path_callback, this, std::placeholders::_1),
@@ -98,6 +120,7 @@ bool rclcomm::Start() {
       GET_TOPIC_NAME(DISPLAY_LOCAL_PATH), 20,
       std::bind(&rclcomm::local_path_callback, this, std::placeholders::_1),
       sub1_obt);
+  // 里程计 & 机器人状态
   odometry_subscriber_ = node->create_subscription<nav_msgs::msg::Odometry>(
       GET_TOPIC_NAME(DISPLAY_ROBOT), 20,
       std::bind(&rclcomm::odom_callback, this, std::placeholders::_1),
@@ -106,6 +129,7 @@ bool rclcomm::Start() {
       GET_TOPIC_NAME(DISPLAY_ROBOT_FOOTPRINT), 20,
       std::bind(&rclcomm::robotFootprintCallback, this, std::placeholders::_1),
       sub1_obt);
+  // 拓扑地图订阅 & 更新发布
   topology_map_subscriber_ = node->create_subscription<topology_msgs::msg::TopologyMap>(
       GET_TOPIC_NAME(DISPLAY_TOPOLOGY_MAP), 
       rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local(),
@@ -114,6 +138,7 @@ bool rclcomm::Start() {
   topology_map_update_publisher_ = node->create_publisher<topology_msgs::msg::TopologyMap>(
       GET_TOPIC_NAME(MSG_ID_TOPOLOGY_MAP_UPDATE), 
       rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local());
+  // ---- 4. 图像话题订阅（根据配置动态创建） ----
   for (auto one_image_display : Config::ConfigManager::Instance()->GetRootConfig().images) {
     LOG_INFO("image location:" << one_image_display.location << "topic:" << one_image_display.topic);
     image_subscriber_list_.emplace_back(
@@ -170,10 +195,12 @@ bool rclcomm::Start() {
             }));
   }
 
+  // ---- 5. 初始化 TF 坐标变换监听 ----
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node->get_clock(), std::chrono::seconds(10));
   transform_listener_ =
       std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-  
+
+  // ---- 6. 订阅内部消息总线（UI → ROS 指令转发） ----
   SUBSCRIBE(MSG_ID_SET_NAV_GOAL_POSE, [this](const basic::RobotPose& pose) {
     std::cout << "recv nav goal pose:" << pose << std::endl;
     PubNavGoal(pose);
@@ -196,24 +223,72 @@ bool rclcomm::Start() {
   return true;
 }
 
+
+/// @brief 关闭 ROS2 通信
 bool rclcomm::Stop() {
   rclcpp::shutdown();
   return true;
 }
 
-void rclcomm::BatteryCallback(
-    const sensor_msgs::msg::BatteryState::SharedPtr msg) {
-  std::map<std::string, std::string> map;
-  map["percent"] = std::to_string(msg->percentage);
-  map["voltage"] = std::to_string(msg->voltage);
-  PUBLISH(MSG_ID_BATTERY_STATE, map);
+
+/// @brief 主循环：处理一轮 ROS 回调 + 更新机器人位姿
+void rclcomm::Process() {
+  if (rclcpp::ok()) {
+    m_executor->spin_some();
+    getRobotPose();
+
+    if (++node_check_counter_ >= 60) {  // 每 2 秒
+    node_check_counter_ = 0;
+    checkNodeHealth();
+    }
+  }
 }
 
-void rclcomm::getRobotPose() {
-  std::string base_frame = Config::ConfigManager::Instance()->GetConfigValue("BaseFrameId", "base_link");
-  auto pose = getTransform(base_frame, "map");
-  PUBLISH(MSG_ID_ROBOT_POSE, pose);
+
+/// @brief 发布重定位位姿到 /initialpose（AMCL 初始化用）
+void rclcomm::PubRelocPose(const basic::RobotPose &pose) {
+  geometry_msgs::msg::PoseWithCovarianceStamped geo_pose;
+  geo_pose.header.frame_id = "map";
+  geo_pose.header.stamp = node->get_clock()->now();
+  geo_pose.pose.pose.position.x = pose.x;
+  geo_pose.pose.pose.position.y = pose.y;
+  tf2::Quaternion q;
+  q.setRPY(0, 0, pose.theta);
+  geo_pose.pose.pose.orientation = tf2::toMsg(q);
+  reloc_pose_publisher_->publish(geo_pose);
 }
+
+
+/// @brief 发布导航目标点到 /goal_pose
+void rclcomm::PubNavGoal(const basic::RobotPose &pose) {
+  geometry_msgs::msg::PoseStamped geo_pose;
+  geo_pose.header.frame_id = "map";
+  geo_pose.header.stamp = node->get_clock()->now();
+  geo_pose.pose.position.x = pose.x;
+  geo_pose.pose.position.y = pose.y;
+  tf2::Quaternion q;
+  q.setRPY(0, 0, pose.theta);
+  geo_pose.pose.orientation = tf2::toMsg(q);
+  nav_goal_publisher_->publish(geo_pose);
+}
+
+
+/// @brief 发布速度控制指令到 /cmd_vel
+void rclcomm::PubRobotSpeed(const basic::RobotSpeed &speed) {
+  geometry_msgs::msg::Twist twist;
+  twist.linear.x = speed.vx;
+  twist.linear.y = speed.vy;
+  twist.linear.z = 0;
+
+  twist.angular.x = 0;
+  twist.angular.y = 0;
+  twist.angular.z = speed.w;
+
+  // Publish it and resolve any remaining callbacks
+  speed_publisher_->publish(twist);
+}
+
+
 /**
  * @description: 获取坐标变化
  * @param {string} from 要变换的坐标系
@@ -249,286 +324,14 @@ basic::RobotPose rclcomm::getTransform(std::string from, std::string to) {
   }
   return ret;
 }
-void rclcomm::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
-  basic::RobotState state;
-  state.vx = (double)msg->twist.twist.linear.x;
-  state.vy = (double)msg->twist.twist.linear.y;
-  state.w = (double)msg->twist.twist.angular.z;
-  state.x = (double)msg->pose.pose.position.x;
-  state.y = (double)msg->pose.pose.position.y;
 
-  geometry_msgs::msg::Quaternion msg_quat = msg->pose.pose.orientation;
-  // 转换类型
-  tf2::Quaternion q;
-  tf2::fromMsg(msg_quat, q);
-  tf2::Matrix3x3 mat(q);
-  double roll, pitch, yaw;
-  mat.getRPY(roll, pitch, yaw);
-  state.theta = yaw;
-  PUBLISH(MSG_ID_ODOM_POSE, state);
-}
-void rclcomm::local_path_callback(const nav_msgs::msg::Path::SharedPtr msg) {
-  try {
-    if (!tf_buffer_->canTransform("map", msg->header.frame_id, tf2::TimePointZero, std::chrono::milliseconds(100))) {
-      return;
-    }
-    geometry_msgs::msg::PointStamped point_map_frame;
-    geometry_msgs::msg::PointStamped point_odom_frame;
-    basic::RobotPath path;
-    for (int i = 0; i < msg->poses.size(); i++) {
-      double x = msg->poses.at(i).pose.position.x;
-      double y = msg->poses.at(i).pose.position.y;
-      point_odom_frame.point.x = x;
-      point_odom_frame.point.y = y;
-      point_odom_frame.header.frame_id = msg->header.frame_id;
-      point_odom_frame.header.stamp = msg->header.stamp;
-      tf_buffer_->transform(point_odom_frame, point_map_frame, "map", std::chrono::milliseconds(100));
-      basic::Point point;
-      point.x = point_map_frame.point.x;
-      point.y = point_map_frame.point.y;
-      path.push_back(point);
-    }
-    PUBLISH(MSG_ID_LOCAL_PATH, path);
-  } catch (tf2::TransformException &ex) {
-  }
-}
 
-/// @brief loop for rate
-void rclcomm::Process() {
-  if (rclcpp::ok()) {
-    m_executor->spin_some();
-    getRobotPose();
-  }
-  // std::cout << "loop" << std::endl;
-}
-
-void rclcomm::path_callback(const nav_msgs::msg::Path::SharedPtr msg) {
-  try {
-    if (!tf_buffer_->canTransform("map", msg->header.frame_id, tf2::TimePointZero, std::chrono::milliseconds(100))) {
-      return;
-    }
-    geometry_msgs::msg::PointStamped point_map_frame;
-    geometry_msgs::msg::PointStamped point_odom_frame;
-    basic::RobotPath path;
-    for (int i = 0; i < msg->poses.size(); i++) {
-      double x = msg->poses.at(i).pose.position.x;
-      double y = msg->poses.at(i).pose.position.y;
-      point_odom_frame.point.x = x;
-      point_odom_frame.point.y = y;
-      point_odom_frame.header.frame_id = msg->header.frame_id;
-      point_odom_frame.header.stamp = msg->header.stamp;
-      tf_buffer_->transform(point_odom_frame, point_map_frame, "map", std::chrono::milliseconds(100));
-      basic::Point point;
-      point.x = point_map_frame.point.x;
-      point.y = point_map_frame.point.y;
-      path.push_back(point);
-    }
-    PUBLISH(MSG_ID_GLOBAL_PATH, path);
-  } catch (tf2::TransformException &ex) {
-  }
-}
-
-void rclcomm::laser_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
-  // qDebug()<<"订阅到激光话题";
-  // std::cout<<"recv laser"<<std::endl;
-  double angle_min = msg->angle_min;
-  double angle_max = msg->angle_max;
-  double angle_increment = msg->angle_increment;
-  try {
-    //        geometry_msgs::msg::TransformStamped laser_transform =
-    //        tf_buffer_->lookupTransform("map","base_scan",tf2::TimePointZero);
-    geometry_msgs::msg::PointStamped point_base_frame;
-    geometry_msgs::msg::PointStamped point_laser_frame;
-    basic::LaserScan laser_points;
-    for (int i = 0; i < msg->ranges.size(); i++) {
-      // 计算当前偏移角度
-      double angle = angle_min + i * angle_increment;
-      double dist = msg->ranges[i];
-      if (isinf(dist))
-        continue;
-      double x = dist * cos(angle);
-      double y = dist * sin(angle);
-      point_laser_frame.point.x = x;
-      point_laser_frame.point.y = y;
-      point_laser_frame.header.frame_id = msg->header.frame_id;
-      std::string base_frame = Config::ConfigManager::Instance()->GetConfigValue("BaseFrameId", "base_link");
-      tf_buffer_->transform(point_laser_frame, point_base_frame, base_frame);
-      basic::Point p;
-      p.x = point_base_frame.point.x;
-      p.y = point_base_frame.point.y;
-      laser_points.push_back(p);
-    }
-    laser_points.id = 0;
-    PUBLISH(MSG_ID_LASER_SCAN, laser_points);
-  } catch (tf2::TransformException &ex) {
-    // tf_buffer_->lookupTransform("map", "base_scan", tf2::TimePointZero);
-  }
-}
-
-void rclcomm::globalCostMapCallback(
-    const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
-  int width = msg->info.width;
-  int height = msg->info.height;
-  double origin_x = msg->info.origin.position.x;
-  double origin_y = msg->info.origin.position.y;
-  basic::OccupancyMap cost_map(height, width,
-                               Eigen::Vector3d(origin_x, origin_y, 0),
-                               msg->info.resolution);
-  for (int i = 0; i < msg->data.size(); i++) {
-    int x = int(i / width);
-    int y = i % width;
-    cost_map(x, y) = msg->data[i];
-  }
-  cost_map.SetFlip();
-  PUBLISH(MSG_ID_GLOBAL_COST_MAP, cost_map);
-}
-void rclcomm::localCostMapCallback(
-    const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
-  if (occ_map_.cols == 0 || occ_map_.rows == 0)
-    return;
-  int width = msg->info.width;
-  int height = msg->info.height;
-  double origin_x = msg->info.origin.position.x;
-  double origin_y = msg->info.origin.position.y;
-  tf2::Quaternion q;
-  tf2::fromMsg(msg->info.origin.orientation, q);
-  tf2::Matrix3x3 mat(q);
-  double roll, pitch, yaw;
-  mat.getRPY(roll, pitch, yaw);
-  double origin_theta = yaw;
-  basic::OccupancyMap cost_map(height, width,
-                               Eigen::Vector3d(origin_x, origin_y, 0),
-                               msg->info.resolution);
-  for (int i = 0; i < msg->data.size(); i++) {
-    int x = (int)i / width;
-    int y = i % width;
-    cost_map(x, y) = msg->data[i];
-  }
-  cost_map.SetFlip();
-  basic::OccupancyMap sized_cost_map = occ_map_;
-  basic::RobotPose origin_pose;
-  try {
-    // 坐标变换 将局部代价地图的基础坐标转换为map下 进行绘制显示
-    geometry_msgs::msg::PoseStamped pose_map_frame;
-    geometry_msgs::msg::PoseStamped pose_curr_frame;
-    pose_curr_frame.pose.position.x = origin_x;
-    pose_curr_frame.pose.position.y = origin_y;
-    q.setRPY(0, 0, origin_theta);
-    pose_curr_frame.pose.orientation = tf2::toMsg(q);
-    pose_curr_frame.header.frame_id = msg->header.frame_id;
-    tf_buffer_->transform(pose_curr_frame, pose_map_frame, "map");
-    tf2::fromMsg(pose_map_frame.pose.orientation, q);
-    tf2::Matrix3x3 mat(q);
-    double roll, pitch, yaw;
-    mat.getRPY(roll, pitch, yaw);
-
-    origin_pose.x = pose_map_frame.pose.position.x;
-    origin_pose.y = pose_map_frame.pose.position.y + cost_map.heightMap();
-    origin_pose.theta = yaw;
-  } catch (tf2::TransformException &ex) {
-    LOG_ERROR("getTransform localCostMapCallback error:" << ex.what());
-  }
-
-  double map_o_x, map_o_y;
-  occ_map_.xy2OccPose(origin_pose.x, origin_pose.y, map_o_x, map_o_y);
-  sized_cost_map.map_data.setZero();
-  for (int x = 0; x < occ_map_.rows; x++)
-    for (int y = 0; y < occ_map_.cols; y++) {
-      if (x > map_o_x && y > map_o_y && y < map_o_y + cost_map.rows &&
-          x < map_o_x + cost_map.cols) {
-        sized_cost_map(x, y) = cost_map(x - map_o_x, y - map_o_y);
-      } else {
-        sized_cost_map(x, y) = 0;
-      }
-    }
-  PUBLISH(MSG_ID_LOCAL_COST_MAP, sized_cost_map);
-}
-void rclcomm::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
-  double origin_x = msg->info.origin.position.x;
-  double origin_y = msg->info.origin.position.y;
-  int width = msg->info.width;
-  int height = msg->info.height;
-  double resolution = msg->info.resolution;
-  basic::OccupancyMap new_map(
-      height, width, Eigen::Vector3d(origin_x, origin_y, 0), resolution);
-
-  for (int i = 0; i < msg->data.size(); i++) {
-    int x = int(i / width);
-    int y = i % width;
-    new_map(x, y) = msg->data[i];
-  }
-  new_map.SetFlip();
-  
-  occ_map_ = new_map;
-  PUBLISH(MSG_ID_OCCUPANCY_MAP, new_map);
-}
-
-void rclcomm::PubRelocPose(const basic::RobotPose &pose) {
-  geometry_msgs::msg::PoseWithCovarianceStamped geo_pose;
-  geo_pose.header.frame_id = "map";
-  geo_pose.header.stamp = node->get_clock()->now();
-  geo_pose.pose.pose.position.x = pose.x;
-  geo_pose.pose.pose.position.y = pose.y;
-  tf2::Quaternion q;
-  q.setRPY(0, 0, pose.theta);
-  geo_pose.pose.pose.orientation = tf2::toMsg(q);
-  reloc_pose_publisher_->publish(geo_pose);
-}
-void rclcomm::PubNavGoal(const basic::RobotPose &pose) {
-  geometry_msgs::msg::PoseStamped geo_pose;
-  geo_pose.header.frame_id = "map";
-  geo_pose.header.stamp = node->get_clock()->now();
-  geo_pose.pose.position.x = pose.x;
-  geo_pose.pose.position.y = pose.y;
-  tf2::Quaternion q;
-  q.setRPY(0, 0, pose.theta);
-  geo_pose.pose.orientation = tf2::toMsg(q);
-  nav_goal_publisher_->publish(geo_pose);
-}
-void rclcomm::PubRobotSpeed(const basic::RobotSpeed &speed) {
-  geometry_msgs::msg::Twist twist;
-  twist.linear.x = speed.vx;
-  twist.linear.y = speed.vy;
-  twist.linear.z = 0;
-
-  twist.angular.x = 0;
-  twist.angular.y = 0;
-  twist.angular.z = speed.w;
-
-  // Publish it and resolve any remaining callbacks
-  speed_publisher_->publish(twist);
-}
-
-void rclcomm::robotFootprintCallback(const geometry_msgs::msg::PolygonStamped::SharedPtr msg) {
-  try {
-    geometry_msgs::msg::PointStamped point_map_frame;
-    geometry_msgs::msg::PointStamped point_footprint_frame;
-    basic::RobotPath footprint;
-    
-    for (const auto& point : msg->polygon.points) {
-      point_footprint_frame.point.x = point.x;
-      point_footprint_frame.point.y = point.y;
-      point_footprint_frame.header.frame_id = msg->header.frame_id;
-      
-      tf_buffer_->transform(point_footprint_frame, point_map_frame, "map");
-      
-      basic::Point p;
-      p.x = point_map_frame.point.x;
-      p.y = point_map_frame.point.y;
-      footprint.push_back(p);
-    }
-    
-    PUBLISH(MSG_ID_ROBOT_FOOTPRINT, footprint);
-  } catch (tf2::TransformException &ex) {
-    LOG_ERROR("robotFootprintCallback transform error: " << ex.what());
-  }
-}
-
+/// @brief ROS 拓扑地图消息 → 内部 TopologyMap 结构
 TopologyMap rclcomm::ConvertFromRosMsg(const topology_msgs::msg::TopologyMap::SharedPtr msg) {
   TopologyMap topology_map;
-  
   topology_map.map_name = msg->map_name;
-  
+
+  // 支持的控制器列表（去重）
   for (const auto& controller : msg->map_property.support_controllers) {
     if(std::find(topology_map.map_property.support_controllers.begin(), topology_map.map_property.support_controllers.end(), controller) == topology_map.map_property.support_controllers.end()) {
       topology_map.map_property.support_controllers.push_back(controller);
@@ -536,6 +339,7 @@ TopologyMap rclcomm::ConvertFromRosMsg(const topology_msgs::msg::TopologyMap::Sh
     LOG_INFO("support controller:" << controller);
   }
 
+  // 支持的目标检查器列表（去重）
   for (const auto& goal_checker : msg->map_property.support_goal_checkers) {
     if(std::find(topology_map.map_property.support_goal_checkers.begin(), topology_map.map_property.support_goal_checkers.end(), goal_checker) == topology_map.map_property.support_goal_checkers.end()) {
       topology_map.map_property.support_goal_checkers.push_back(goal_checker);
@@ -543,6 +347,7 @@ TopologyMap rclcomm::ConvertFromRosMsg(const topology_msgs::msg::TopologyMap::Sh
     LOG_INFO("support goal checker:" << goal_checker);
   }
   
+  // 站点信息
   for (const auto& point_msg : msg->points) {
     TopologyMap::PointInfo point_info;
     point_info.name = point_msg.name;
@@ -553,6 +358,7 @@ TopologyMap rclcomm::ConvertFromRosMsg(const topology_msgs::msg::TopologyMap::Sh
     topology_map.points.push_back(point_info);
   }
   
+  // 路线信息（from → to 的邻接关系）
   for (const auto& route_msg : msg->routes) {
     TopologyMap::RouteInfo route_info;
     route_info.controller = route_msg.route_info.controller;
@@ -560,10 +366,12 @@ TopologyMap rclcomm::ConvertFromRosMsg(const topology_msgs::msg::TopologyMap::Sh
     route_info.goal_checker = route_msg.route_info.goal_checker;
     topology_map.routes[route_msg.from_point][route_msg.to_point] = route_info;
   }
-  
+
   return topology_map;
 }
 
+
+/// @brief 内部 TopologyMap 结构 → ROS 拓扑地图消息
 topology_msgs::msg::TopologyMap rclcomm::ConvertToRosMsg(const TopologyMap& topology_map) {
   topology_msgs::msg::TopologyMap msg;
   
@@ -606,7 +414,294 @@ topology_msgs::msg::TopologyMap rclcomm::ConvertToRosMsg(const TopologyMap& topo
   return msg;
 }
 
+
+/// @brief 全局地图回调：解析栅格数据并缓存到 occ_map_ 供局部代价地图叠加使用
+void rclcomm::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_MAP)] = std::chrono::steady_clock::now(); }
+  double origin_x = msg->info.origin.position.x;
+  double origin_y = msg->info.origin.position.y;
+  int width = msg->info.width;
+  int height = msg->info.height;
+  double resolution = msg->info.resolution;
+  basic::OccupancyMap new_map(
+      height, width, Eigen::Vector3d(origin_x, origin_y, 0), resolution);
+
+  for (int i = 0; i < msg->data.size(); i++) {
+    int x = int(i / width);
+    int y = i % width;
+    new_map(x, y) = msg->data[i];
+  }
+  new_map.SetFlip();
+  
+  occ_map_ = new_map;
+  PUBLISH(MSG_ID_OCCUPANCY_MAP, new_map);
+}
+
+
+/// @brief 局部代价地图回调：将局部代价地图叠加到全局地图坐标系下进行显示
+void rclcomm::localCostMapCallback(
+  const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_LOCAL_COST_MAP)] = std::chrono::steady_clock::now(); }
+
+  // 全局地图未就绪时跳过
+  if (occ_map_.cols == 0 || occ_map_.rows == 0)
+    return;
+
+  // 1. 解析局部代价地图的栅格数据
+  int width = msg->info.width;
+  int height = msg->info.height;
+  double origin_x = msg->info.origin.position.x;
+  double origin_y = msg->info.origin.position.y;
+  tf2::Quaternion q;
+  tf2::fromMsg(msg->info.origin.orientation, q);
+  tf2::Matrix3x3 mat(q);
+  double roll, pitch, yaw;
+  mat.getRPY(roll, pitch, yaw);
+  double origin_theta = yaw;
+  basic::OccupancyMap cost_map(height, width,
+                               Eigen::Vector3d(origin_x, origin_y, 0),
+                               msg->info.resolution);
+  for (int i = 0; i < msg->data.size(); i++) {
+    int x = (int)i / width;
+    int y = i % width;
+    cost_map(x, y) = msg->data[i];
+  }
+  cost_map.SetFlip();
+
+  // 2. 将局部代价地图原点坐标变换到 map 坐标系
+  basic::OccupancyMap sized_cost_map = occ_map_;
+  basic::RobotPose origin_pose;
+  try {
+    geometry_msgs::msg::PoseStamped pose_map_frame;
+    geometry_msgs::msg::PoseStamped pose_curr_frame;
+    pose_curr_frame.pose.position.x = origin_x;
+    pose_curr_frame.pose.position.y = origin_y;
+    q.setRPY(0, 0, origin_theta);
+    pose_curr_frame.pose.orientation = tf2::toMsg(q);
+    pose_curr_frame.header.frame_id = msg->header.frame_id;
+    tf_buffer_->transform(pose_curr_frame, pose_map_frame, "map");
+    tf2::fromMsg(pose_map_frame.pose.orientation, q);
+    tf2::Matrix3x3 mat(q);
+    double roll, pitch, yaw;
+    mat.getRPY(roll, pitch, yaw);
+
+    origin_pose.x = pose_map_frame.pose.position.x;
+    origin_pose.y = pose_map_frame.pose.position.y + cost_map.heightMap();
+    origin_pose.theta = yaw;
+  } catch (tf2::TransformException &ex) {
+    LOG_ERROR("getTransform localCostMapCallback error:" << ex.what());
+  }
+
+  // 3. 将局部代价地图像素叠加到全局地图对应区域
+  double map_o_x, map_o_y;
+  occ_map_.xy2OccPose(origin_pose.x, origin_pose.y, map_o_x, map_o_y);
+  sized_cost_map.map_data.setZero();
+  for (int x = 0; x < occ_map_.rows; x++)
+    for (int y = 0; y < occ_map_.cols; y++) {
+      if (x > map_o_x && y > map_o_y && y < map_o_y + cost_map.rows &&
+          x < map_o_x + cost_map.cols) {
+        sized_cost_map(x, y) = cost_map(x - map_o_x, y - map_o_y);
+      } else {
+        sized_cost_map(x, y) = 0;
+      }
+    }
+  PUBLISH(MSG_ID_LOCAL_COST_MAP, sized_cost_map);
+}
+
+
+/// @brief 全局代价地图回调：解析栅格数据并发布
+void rclcomm::globalCostMapCallback(
+    const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_GLOBAL_COST_MAP)] = std::chrono::steady_clock::now(); }   
+  int width = msg->info.width;
+  int height = msg->info.height;
+  double origin_x = msg->info.origin.position.x;
+  double origin_y = msg->info.origin.position.y;
+  basic::OccupancyMap cost_map(height, width,
+                               Eigen::Vector3d(origin_x, origin_y, 0),
+                               msg->info.resolution);
+  for (int i = 0; i < msg->data.size(); i++) {
+    int x = int(i / width);
+    int y = i % width;
+    cost_map(x, y) = msg->data[i];
+  }
+  cost_map.SetFlip();
+  PUBLISH(MSG_ID_GLOBAL_COST_MAP, cost_map);
+}
+
+
+/// @brief 激光雷达回调：将极坐标扫描点转换为 base_link 坐标系下的笛卡尔点云
+void rclcomm::laser_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_LASER)] = std::chrono::steady_clock::now(); }
+
+  double angle_min = msg->angle_min;
+  double angle_increment = msg->angle_increment;
+
+  try {
+    geometry_msgs::msg::PointStamped point_base_frame;
+    geometry_msgs::msg::PointStamped point_laser_frame;
+    basic::LaserScan laser_points;
+    std::string base_frame = Config::ConfigManager::Instance()->GetConfigValue("BaseFrameId", "base_link");
+
+    for (int i = 0; i < msg->ranges.size(); i++) {
+      double angle = angle_min + i * angle_increment;
+      double dist = msg->ranges[i];
+      if (isinf(dist))
+        continue;
+
+      // 极坐标 → 笛卡尔，再 TF 到 base_link
+      double x = dist * cos(angle);
+      double y = dist * sin(angle);
+      point_laser_frame.point.x = x;
+      point_laser_frame.point.y = y;
+      point_laser_frame.header.frame_id = msg->header.frame_id;
+      tf_buffer_->transform(point_laser_frame, point_base_frame, base_frame);
+
+      basic::Point p;
+      p.x = point_base_frame.point.x;
+      p.y = point_base_frame.point.y;
+      laser_points.push_back(p);
+    }
+    laser_points.id = 0;
+    PUBLISH(MSG_ID_LASER_SCAN, laser_points);
+  } catch (tf2::TransformException &ex) {
+  }
+}
+
+
+/// @brief 里程计回调：提取线速度/角速度和位姿，四元数转欧拉角
+void rclcomm::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_ROBOT)] = std::chrono::steady_clock::now(); }
+  basic::RobotState state;
+  state.vx = (double)msg->twist.twist.linear.x;
+  state.vy = (double)msg->twist.twist.linear.y;
+  state.w = (double)msg->twist.twist.angular.z;
+  state.x = (double)msg->pose.pose.position.x;
+  state.y = (double)msg->pose.pose.position.y;
+
+  geometry_msgs::msg::Quaternion msg_quat = msg->pose.pose.orientation;
+  // 转换类型
+  tf2::Quaternion q;
+  tf2::fromMsg(msg_quat, q);
+  tf2::Matrix3x3 mat(q);
+  double roll, pitch, yaw;
+  mat.getRPY(roll, pitch, yaw);
+  state.theta = yaw;
+  PUBLISH(MSG_ID_ODOM_POSE, state);
+}
+
+
+/// @brief 电池状态回调：提取电量百分比和电压
+void rclcomm::BatteryCallback(
+    const sensor_msgs::msg::BatteryState::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(MSG_ID_BATTERY_STATE)] = std::chrono::steady_clock::now(); }
+  std::map<std::string, std::string> map;
+  map["percent"] = std::to_string(msg->percentage);
+  map["voltage"] = std::to_string(msg->voltage);
+  PUBLISH(MSG_ID_BATTERY_STATE, map);
+}
+
+
+/// @brief 全局路径回调：将路径点从原始坐标系变换到 map 坐标系
+void rclcomm::path_callback(const nav_msgs::msg::Path::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_GLOBAL_PATH)] = std::chrono::steady_clock::now(); }
+  try {
+    if (!tf_buffer_->canTransform("map", msg->header.frame_id, tf2::TimePointZero, std::chrono::milliseconds(100))) {
+      return;
+    }
+    geometry_msgs::msg::PointStamped point_map_frame;
+    geometry_msgs::msg::PointStamped point_odom_frame;
+    basic::RobotPath path;
+    for (int i = 0; i < msg->poses.size(); i++) {
+      double x = msg->poses.at(i).pose.position.x;
+      double y = msg->poses.at(i).pose.position.y;
+      point_odom_frame.point.x = x;
+      point_odom_frame.point.y = y;
+      point_odom_frame.header.frame_id = msg->header.frame_id;
+      point_odom_frame.header.stamp = msg->header.stamp;
+      tf_buffer_->transform(point_odom_frame, point_map_frame, "map", std::chrono::milliseconds(100));
+      basic::Point point;
+      point.x = point_map_frame.point.x;
+      point.y = point_map_frame.point.y;
+      path.push_back(point);
+    }
+    PUBLISH(MSG_ID_GLOBAL_PATH, path);
+  } catch (tf2::TransformException &ex) {
+  }
+}
+
+
+/// @brief 局部路径回调：将路径点从原始坐标系变换到 map 坐标系
+void rclcomm::local_path_callback(const nav_msgs::msg::Path::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_LOCAL_PATH)] = std::chrono::steady_clock::now(); }
+  try {
+    if (!tf_buffer_->canTransform("map", msg->header.frame_id, tf2::TimePointZero, std::chrono::milliseconds(100))) {
+      return;
+    }
+    geometry_msgs::msg::PointStamped point_map_frame;
+    geometry_msgs::msg::PointStamped point_odom_frame;
+    basic::RobotPath path;
+    for (int i = 0; i < msg->poses.size(); i++) {
+      double x = msg->poses.at(i).pose.position.x;
+      double y = msg->poses.at(i).pose.position.y;
+      point_odom_frame.point.x = x;
+      point_odom_frame.point.y = y;
+      point_odom_frame.header.frame_id = msg->header.frame_id;
+      point_odom_frame.header.stamp = msg->header.stamp;
+      tf_buffer_->transform(point_odom_frame, point_map_frame, "map", std::chrono::milliseconds(100));
+      basic::Point point;
+      point.x = point_map_frame.point.x;
+      point.y = point_map_frame.point.y;
+      path.push_back(point);
+    }
+    PUBLISH(MSG_ID_LOCAL_PATH, path);
+  } catch (tf2::TransformException &ex) {
+  }
+}
+
+
+/// @brief 机器人轮廓回调：将轮廓多边形顶点变换到 map 坐标系
+void rclcomm::robotFootprintCallback(const geometry_msgs::msg::PolygonStamped::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_ROBOT_FOOTPRINT)] = std::chrono::steady_clock::now(); }
+  try {
+    geometry_msgs::msg::PointStamped point_map_frame;
+    geometry_msgs::msg::PointStamped point_footprint_frame;
+    basic::RobotPath footprint;
+    
+    for (const auto& point : msg->polygon.points) {
+      point_footprint_frame.point.x = point.x;
+      point_footprint_frame.point.y = point.y;
+      point_footprint_frame.header.frame_id = msg->header.frame_id;
+      
+      tf_buffer_->transform(point_footprint_frame, point_map_frame, "map");
+      
+      basic::Point p;
+      p.x = point_map_frame.point.x;
+      p.y = point_map_frame.point.y;
+      footprint.push_back(p);
+    }
+    
+    PUBLISH(MSG_ID_ROBOT_FOOTPRINT, footprint);
+  } catch (tf2::TransformException &ex) {
+    LOG_ERROR("robotFootprintCallback transform error: " << ex.what());
+  }
+}
+
+
+/// @brief 拓扑地图回调：将 ROS 消息转换为内部数据结构并发布
 void rclcomm::topologyMapCallback(const topology_msgs::msg::TopologyMap::SharedPtr msg) {
+  { std::lock_guard<std::mutex> lk(health_mutex_);
+    topic_last_received_[GET_TOPIC_NAME(DISPLAY_TOPOLOGY_MAP)] = std::chrono::steady_clock::now(); }
+
   TopologyMap topology_map = ConvertFromRosMsg(msg);
   LOG_INFO("recv topology map:" << topology_map.map_name);
   for (const auto& point : topology_map.points) {
@@ -618,4 +713,91 @@ void rclcomm::topologyMapCallback(const topology_msgs::msg::TopologyMap::SharedP
     }
   }
   PUBLISH(MSG_ID_TOPOLOGY_MAP, topology_map);
+}
+
+
+/// @brief 通过 TF 查询 base_link → map 变换，获取机器人当前位姿
+void rclcomm::getRobotPose() {
+  std::string base_frame = Config::ConfigManager::Instance()->GetConfigValue("BaseFrameId", "base_link");
+  auto pose = getTransform(base_frame, "map");
+  PUBLISH(MSG_ID_ROBOT_POSE, pose);
+}
+
+
+void rclcomm::checkNodeHealth() {
+    // 1. 获取当前活跃节点
+    auto alive = node->get_node_graph_interface()->get_node_names_and_namespaces();
+    std::set<std::string> alive_set;
+    for (auto& [name, ns] : alive) {
+        // 注意：name 不带前导 /，需要拼接
+        std::string full_name = (ns == "/") ? ("/" + name) : (ns + "/" + name);
+        alive_set.insert(full_name);
+    }
+
+    // 2. 逐组比对节点 + 话题
+    auto& groups = Config::ConfigManager::Instance()->GetRootConfig().nodeGroup_config;
+    SystemHealthStatus health;
+    std::set<std::string> grouped_nodes;
+    auto now = std::chrono::steady_clock::now();
+
+    for (auto& group : groups) {
+        NodeGroupStatus gs;
+        gs.group_name = group.group_name;
+        gs.critical = group.critical;
+        gs.total_count = group.expected_nodes.size();
+        gs.online_count = 0;
+
+        for (auto& expected : group.expected_nodes) {
+            bool online = alive_set.count(expected) > 0;
+            gs.nodes.push_back({expected, online});
+            if (online) gs.online_count++;
+            grouped_nodes.insert(expected);
+        }
+
+        // 话题数据流检查（持锁快照，避免长时间占锁）
+        std::map<std::string, std::chrono::steady_clock::time_point> snapshot;
+        {
+            std::lock_guard<std::mutex> lk(health_mutex_);
+            snapshot = topic_last_received_;
+        }
+        for (auto& topic : group.health_topics) {
+            TopicStatus ts;
+            ts.topic_name = topic;
+            auto it = snapshot.find(topic);
+            if (it != snapshot.end()) {
+                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second);
+                ts.last_received_seconds_ago = elapsed.count();
+                ts.timeout = (elapsed.count() > 5);  // 5 秒阈值
+            } else {
+                ts.last_received_seconds_ago = -1;  // 从未收到
+                ts.timeout = true;
+            }
+            gs.topics.push_back(ts);
+        }
+
+        health.groups.push_back(gs);
+    }
+
+    // 3. 未归组节点
+    for (auto& n : alive_set) {
+        if (grouped_nodes.count(n) == 0) {
+            health.ungrouped_nodes.push_back({n, true});
+        }
+    }
+
+    // 4. 计算总体状态
+    health.overall_level = HealthLevel::Normal;
+    for (auto& g : health.groups) {
+        bool group_healthy = g.healthy() && g.topics_healthy();
+        if (!group_healthy) {
+            if (g.critical) {
+                health.overall_level = HealthLevel::Fault;
+                break;  // 关键组故障，直接最高级
+            } else {
+                health.overall_level = HealthLevel::Degraded;
+            }
+        }
+    }
+
+    PUBLISH(MSG_ID_NODE_HEALTH, health);
 }

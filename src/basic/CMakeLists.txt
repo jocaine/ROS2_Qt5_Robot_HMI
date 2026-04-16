@@ -6,6 +6,7 @@ algorithm
 map
 point
 common
+nodeGroup
 )
 
 if(WIN32)

@@ -38,62 +38,20 @@ namespace Display {
 class SceneManager;
 class DisplayManager : public QObject {
   Q_OBJECT
- public:
- private:
-  std::map<std::string, std::any> display_map_;
-
-  RobotPose robot_pose_{0, 0, 0};
-  RobotPose robot_pose_goal_{0, 0, 0};
-  OccupancyMap map_data_;
-  std::string focus_display_;
-  RobotPose local_cost_world_pose_;
-  OccupancyMap local_cost_map_;
-  double global_scal_value_ = 1;
-  bool is_reloc_mode_{false};
-  ViewManager *graphics_view_ptr_;
-  SetPoseWidget *set_reloc_pose_widget_;
-  SceneManager *scene_manager_ptr_;
-  bool init_flag_{false};
-
-
- signals:
-  void cursorPosMap(QPointF);
-  void signalPub2DPose(const RobotPose &pose);
-  void signalPub2DGoal(const RobotPose &pose);
-  void signalTopologyMapUpdate(const TopologyMap &map);
-  void signalCurrentSelectPointChanged(const TopologyMap::PointInfo &);
-  void signalPubMap(const OccupancyMap &map);
-  void signalEditMapModeChanged(MapEditMode mode);
- public slots:
-  void updateScaled(double value);
-  void StartReloc();
-  void SetEditMapMode(MapEditMode mode);
-  void SetToolRange(double range);
-  double GetEraserRange() const;
-  double GetPenRange() const;
-  void AddOneNavPoint();
-  void AddPointAtRobotPosition();
-  void slotRobotScenePoseChanged(const RobotPose &pose);
-  void slotSetRobotPose(const RobotPose &pose);
-  void FocusDisplay(const std::string &display_type);
-  void SetScaleBig();
-  void SetScaleSmall();
-
-  OccupancyMap GetOccupancyMap();
-  void UpdateOCCMap(const OccupancyMap &map);
-  TopologyMap GetTopologyMap();
-  void UpdateTopologyMap(const TopologyMap &topology_map);
-
- private:
-  void InitUi();
-  std::vector<Point> transLaserPoint(const std::vector<Point> &point);
-  QPushButton *btn_move_focus_;
 
  public:
   DisplayManager();
   ~DisplayManager();
+
+  // ── 显示图层访问 ──────────────────────────────────
   QGraphicsView *GetViewPtr() { return graphics_view_ptr_; }
   VirtualDisplay *GetDisplay(const std::string &name);
+  bool SetDisplayConfig(const std::string &config_name, const std::any &data);
+  void SetFocusOn(const std::string &display_type) {
+    focus_display_ = display_type;
+  }
+
+  // ── 坐标系转换（world / scene / map 三套坐标互转）────
   QPointF wordPose2Scene(const QPointF &point);
   RobotPose wordPose2Scene(const RobotPose &point);
   QPointF wordPose2Map(const QPointF &pose);
@@ -101,16 +59,84 @@ class DisplayManager : public QObject {
   RobotPose mapPose2Word(const RobotPose &pose);
   RobotPose scenePoseToWord(const RobotPose &pose);
   RobotPose scenePoseToMap(const RobotPose &pose);
+
+  // ── 机器人位姿 ──────────────────────────────────
   void UpdateRobotPose(const RobotPose &pose);
-  bool SetDisplayConfig(const std::string &config_name, const std::any &data);
+  RobotPose GetRobotPose() { return robot_pose_; }
+
+  // ── 地图数据 ────────────────────────────────────
+  OccupancyMap &GetMap();
+
+  // ── 交互模式切换 ─────────────────────────────────
   void SetRelocMode(bool is_move);
   void SetNavGoalMode(bool is_start);
-  OccupancyMap &GetMap();
-  RobotPose GetRobotPose() { return robot_pose_; }
-  void SetFocusOn(const std::string &display_type) {
-    focus_display_ = display_type;
-  }
-  
+
+ signals:
+  // ── 鼠标 / 位姿发布 ─────────────────────────────
+  void cursorPosMap(QPointF);
+  void signalPub2DPose(const RobotPose &pose);   // 重定位位姿发布
+  void signalPub2DGoal(const RobotPose &pose);   // 导航目标点发布
+
+  // ── 地图相关信号 ─────────────────────────────────
+  void signalPubMap(const OccupancyMap &map);
+  void signalEditMapModeChanged(MapEditMode mode);
+  void signalTopologyMapUpdate(const TopologyMap &map);
+  void signalCurrentSelectPointChanged(const TopologyMap::PointInfo &);
+
+ public slots:
+  // ── 视图缩放 ────────────────────────────────────
+  void updateScaled(double value);
+  void SetScaleBig();
+  void SetScaleSmall();
+  void FocusDisplay(const std::string &display_type);
+
+  // ── 重定位 ──────────────────────────────────────
+  void StartReloc();
+  void slotSetRobotPose(const RobotPose &pose);
+
+  // ── 地图编辑 ────────────────────────────────────
+  void SetEditMapMode(MapEditMode mode);
+  void SetToolRange(double range);
+  double GetEraserRange() const;
+  double GetPenRange() const;
+
+  // ── 导航点管理 ──────────────────────────────────
+  void AddOneNavPoint();
+  void AddPointAtRobotPosition();
+
+  // ── 机器人位姿（场景层回调）─────────────────────
+  void slotRobotScenePoseChanged(const RobotPose &pose);
+
+  // ── 地图数据读写 ────────────────────────────────
+  OccupancyMap GetOccupancyMap();
+  void UpdateOCCMap(const OccupancyMap &map);
+  TopologyMap GetTopologyMap();
+  void UpdateTopologyMap(const TopologyMap &topology_map);
+
+ private:
+  // ── 内部初始化 ──────────────────────────────────
+  void InitUi();
+  std::vector<Point> transLaserPoint(const std::vector<Point> &point);
+
+  // ── UI 组件 ────────────────────────────────────
+  ViewManager *graphics_view_ptr_;
+  SetPoseWidget *set_reloc_pose_widget_;
+  SceneManager *scene_manager_ptr_;
+  QPushButton *btn_move_focus_;
+
+  // ── 状态标志 ────────────────────────────────────
+  bool init_flag_{false};
+  bool is_reloc_mode_{false};
+  double global_scal_value_ = 1;
+  std::string focus_display_;
+
+  // ── 核心数据 ────────────────────────────────────
+  std::map<std::string, std::any> display_map_;   // 图层名 -> 图层实例
+  RobotPose robot_pose_{0, 0, 0};
+  RobotPose robot_pose_goal_{0, 0, 0};
+  OccupancyMap map_data_;
+  RobotPose local_cost_world_pose_;
+  OccupancyMap local_cost_map_;
 };
 
 }  // namespace Display

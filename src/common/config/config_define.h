@@ -51,6 +51,15 @@ struct MapConfig {
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MapConfig, path);
 
+struct NodeGroupConfig {
+    std::string group_name;                    // 组名，如 "导航系统"
+    bool critical = true;                      // 是否关键子系统
+    std::vector<std::string> expected_nodes;   // 期望的节点列表
+    std::vector<std::string> health_topics;    // 关联的健康话题（可选）
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
+    NodeGroupConfig, group_name, critical, expected_nodes, health_topics);
+
 struct ConfigRoot {
   std::vector<DisplayConfig> display_config;
   std::vector<ImageDisplayConfig> images;
@@ -58,7 +67,8 @@ struct ConfigRoot {
   std::map<std::string, std::string> key_value;
   ChannelConfig channel_config; 
   MapConfig map_config;
+  std::vector<NodeGroupConfig> nodeGroup_config;
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ConfigRoot, display_config, images, robot_shape_config, key_value, channel_config, map_config);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ConfigRoot, display_config, images, robot_shape_config, key_value, channel_config, map_config, nodeGroup_config);
 
 }  // namespace Config
