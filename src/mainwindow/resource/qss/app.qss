@@ -1,0 +1,478 @@
+QMainWindow {
+    background-color: #f4f6f8;
+    color: #2f3542;
+}
+
+QStatusBar {
+    background-color: #ffffff;
+    border-top: 1px solid #d9e2ec;
+    color: #5f6b7a;
+}
+
+QMenuBar {
+    background-color: #ffffff;
+    border-bottom: 1px solid #d9e2ec;
+    color: #2f3542;
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+QMenuBar::item:selected {
+    background-color: #eef6ff;
+    color: #1976d2;
+}
+
+QMenu {
+    background-color: #ffffff;
+    border: 1px solid #d9e2ec;
+    border-radius: 8px;
+    padding: 6px;
+}
+
+QMenu::item {
+    padding: 8px 14px;
+    border-radius: 6px;
+    color: #2f3542;
+}
+
+QMenu::item:selected {
+    background-color: #eef6ff;
+    color: #1976d2;
+}
+
+QWidget#mapToolBar {
+    background-color: #ffffff;
+    border: 1px solid #d9e2ec;
+    border-radius: 10px;
+}
+
+QWidget#mapToolBar QToolButton[variant="map-toolbar"] {
+    background-color: #ffffff;
+    color: #2f3542;
+    border: 1px solid #d7dee7;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 500;
+    font-size: 11px;
+    min-width: 74px;
+    min-height: 42px;
+    max-height: 42px;
+}
+
+QWidget#mapToolBar QToolButton[variant="map-toolbar"]:hover {
+    background-color: #f8fbff;
+    border-color: #90caf9;
+}
+
+QWidget#mapToolBar QToolButton[variant="map-toolbar"]:pressed {
+    background-color: #e8f1ff;
+    border-color: #1976d2;
+}
+
+QWidget#mapToolBar QToolButton[variant="map-toolbar"]:checked {
+    background-color: #1976d2;
+    color: #ffffff;
+    border-color: #1976d2;
+}
+
+QWidget#mapToolBar QToolButton[variant="map-toolbar"]:disabled {
+    background-color: #f3f5f7;
+    color: #9aa4b2;
+    border-color: #e1e6ec;
+}
+
+QProgressBar#battery_bar_ {
+    border: 1px solid #d7dee7;
+    border-radius: 12px;
+    background-color: #f5f7fa;
+    text-align: center;
+    color: #2f3542;
+    font-weight: 500;
+    font-size: 11px;
+}
+
+QProgressBar#battery_bar_::chunk {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+      stop:0 #4caf50, stop:0.5 #8bc34a, stop:1 #4caf50);
+    border-radius: 10px;
+    margin: 2px;
+}
+
+QLabel#label_power_ {
+    color: #2f3542;
+    font-weight: 500;
+    font-size: 11px;
+    padding: 2px 0;
+}
+
+QWidget#editToolBar {
+    background-color: #ffffff;
+    border: 1px solid #d9e2ec;
+    border-radius: 10px;
+}
+
+QWidget#editToolBar QToolButton[variant="edit-toolbar"] {
+    background-color: #ffffff;
+    color: #2f3542;
+    border: 1px solid #d7dee7;
+    border-radius: 8px;
+    padding: 4px;
+    min-width: 40px;
+    max-width: 40px;
+    min-height: 40px;
+    max-height: 40px;
+}
+
+QWidget#editToolBar QToolButton[variant="edit-toolbar"]:hover {
+    background-color: #f8fbff;
+    border-color: #90caf9;
+}
+
+QWidget#editToolBar QToolButton[variant="edit-toolbar"]:pressed {
+    background-color: #e8f1ff;
+    border-color: #1976d2;
+}
+
+QWidget#editToolBar QToolButton[variant="edit-toolbar"]:checked {
+    background-color: #1976d2;
+    border-color: #1976d2;
+}
+
+QWidget#editToolBar QToolButton[variant="edit-toolbar"]:disabled {
+    background-color: #f3f5f7;
+    border-color: #e1e6ec;
+}
+
+QFrame#editToolBarSeparator {
+    background-color: #d9e2ec;
+    min-height: 1px;
+    max-height: 1px;
+}
+
+QWidget#centralWidgetHost {
+    background-color: #ffffff;
+}
+
+QWidget#taskListPanel {
+    background-color: #ffffff;
+    border: 1px solid #d9e2ec;
+    border-radius: 10px;
+}
+
+QWidget#taskListPanel QPushButton {
+    background-color: #ffffff;
+    color: #1976d2;
+    border: 1px solid #b7d4f5;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-weight: 500;
+    font-size: 12px;
+    min-height: 30px;
+}
+
+QWidget#taskListPanel QPushButton:hover {
+    background-color: #eef6ff;
+    border-color: #1976d2;
+}
+
+QWidget#taskListPanel QPushButton:pressed {
+    background-color: #dcecff;
+    border-color: #1565c0;
+}
+
+QWidget#taskListPanel QPushButton:disabled {
+    background-color: #f3f5f7;
+    color: #9aa4b2;
+    border-color: #e1e6ec;
+}
+
+QWidget#taskListPanel QCheckBox {
+    color: #2f3542;
+    font-weight: 500;
+    font-size: 12px;
+    spacing: 8px;
+}
+
+QWidget#taskListPanel QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #b8c4d0;
+    border-radius: 4px;
+    background-color: #ffffff;
+}
+
+QWidget#taskListPanel QCheckBox::indicator:hover {
+    border-color: #1976d2;
+}
+
+QWidget#taskListPanel QCheckBox::indicator:checked {
+    background-color: #1976d2;
+    border-color: #1976d2;
+}
+
+QWidget#navGoalWidget,
+QWidget#setPoseWidget,
+QWidget#topologyRouteWidget {
+    background-color: transparent;
+    color: #2f3542;
+    font-family: "Segoe UI", "Microsoft YaHei", Arial;
+    font-size: 12px;
+}
+
+QWidget#navGoalWidget QLabel,
+QWidget#setPoseWidget QLabel,
+QWidget#topologyRouteWidget QLabel {
+    color: #445064;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+}
+
+QWidget#navGoalWidget QLineEdit,
+QWidget#topologyRouteWidget QLineEdit {
+    border: 1px solid #d0d7e2;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background-color: #ffffff;
+    color: #2f3542;
+    font-size: 12px;
+    min-height: 28px;
+}
+
+QWidget#navGoalWidget QLineEdit:focus,
+QWidget#topologyRouteWidget QLineEdit:focus {
+    border-color: #1976d2;
+    background-color: #ffffff;
+}
+
+QWidget#navGoalWidget QLineEdit[readOnly="true"],
+QWidget#topologyRouteWidget QLineEdit[readOnly="true"] {
+    background-color: #f5f7fa;
+    color: #5f6b7a;
+}
+
+QWidget#navGoalWidget QLineEdit:disabled,
+QWidget#topologyRouteWidget QLineEdit:disabled {
+    background-color: #f3f5f7;
+    color: #9aa4b2;
+    border-color: #e1e6ec;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox,
+QWidget#setPoseWidget QDoubleSpinBox,
+QWidget#topologyRouteWidget QDoubleSpinBox {
+    border: 1px solid #d0d7e2;
+    border-radius: 6px;
+    padding: 4px 24px 4px 8px;
+    background-color: #ffffff;
+    color: #2f3542;
+    font-size: 12px;
+    min-height: 28px;
+}
+
+QWidget#topologyRouteWidget QComboBox {
+    border: 1px solid #d0d7e2;
+    border-radius: 6px;
+    padding: 4px 28px 4px 8px;
+    background-color: #ffffff;
+    color: #2f3542;
+    font-size: 12px;
+    min-height: 28px;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox:focus,
+QWidget#setPoseWidget QDoubleSpinBox:focus,
+QWidget#topologyRouteWidget QDoubleSpinBox:focus,
+QWidget#topologyRouteWidget QComboBox:focus {
+    border-color: #1976d2;
+    background-color: #ffffff;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox:disabled,
+QWidget#setPoseWidget QDoubleSpinBox:disabled,
+QWidget#topologyRouteWidget QDoubleSpinBox:disabled,
+QWidget#topologyRouteWidget QComboBox:disabled {
+    background-color: #f3f5f7;
+    color: #9aa4b2;
+    border-color: #e1e6ec;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox::up-button,
+QWidget#navGoalWidget QDoubleSpinBox::down-button,
+QWidget#setPoseWidget QDoubleSpinBox::up-button,
+QWidget#setPoseWidget QDoubleSpinBox::down-button,
+QWidget#topologyRouteWidget QDoubleSpinBox::up-button,
+QWidget#topologyRouteWidget QDoubleSpinBox::down-button {
+    width: 18px;
+    border: none;
+    border-left: 1px solid #e1e6ec;
+    background-color: transparent;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox::up-button,
+QWidget#setPoseWidget QDoubleSpinBox::up-button,
+QWidget#topologyRouteWidget QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    border-top-right-radius: 6px;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox::down-button,
+QWidget#setPoseWidget QDoubleSpinBox::down-button,
+QWidget#topologyRouteWidget QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    border-bottom-right-radius: 6px;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox::up-button:hover,
+QWidget#navGoalWidget QDoubleSpinBox::down-button:hover,
+QWidget#setPoseWidget QDoubleSpinBox::up-button:hover,
+QWidget#setPoseWidget QDoubleSpinBox::down-button:hover,
+QWidget#topologyRouteWidget QDoubleSpinBox::up-button:hover,
+QWidget#topologyRouteWidget QDoubleSpinBox::down-button:hover {
+    background-color: #eef6ff;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox::up-button:pressed,
+QWidget#navGoalWidget QDoubleSpinBox::down-button:pressed,
+QWidget#setPoseWidget QDoubleSpinBox::up-button:pressed,
+QWidget#setPoseWidget QDoubleSpinBox::down-button:pressed,
+QWidget#topologyRouteWidget QDoubleSpinBox::up-button:pressed,
+QWidget#topologyRouteWidget QDoubleSpinBox::down-button:pressed {
+    background-color: #dcecff;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox::up-arrow,
+QWidget#setPoseWidget QDoubleSpinBox::up-arrow,
+QWidget#topologyRouteWidget QDoubleSpinBox::up-arrow {
+    image: url(:/images/up.png);
+    width: 10px;
+    height: 10px;
+}
+
+QWidget#navGoalWidget QDoubleSpinBox::down-arrow,
+QWidget#setPoseWidget QDoubleSpinBox::down-arrow,
+QWidget#topologyRouteWidget QDoubleSpinBox::down-arrow {
+    image: url(:/images/down.png);
+    width: 10px;
+    height: 10px;
+}
+
+QWidget#topologyRouteWidget QComboBox::drop-down {
+    border: none;
+    width: 24px;
+    background: transparent;
+}
+
+QWidget#topologyRouteWidget QComboBox::down-arrow {
+    image: url(:/images/down.png);
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+}
+
+QWidget#topologyRouteWidget QComboBox QAbstractItemView {
+    border: 1px solid #d0d7e2;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #2f3542;
+    selection-background-color: #eef6ff;
+    selection-color: #1976d2;
+    padding: 4px;
+}
+
+QWidget#navGoalWidget QPushButton,
+QWidget#setPoseWidget QPushButton,
+QWidget#topologyRouteWidget QPushButton {
+    border: 1px solid #1976d2;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: 500;
+    font-size: 12px;
+    color: #ffffff;
+    background-color: #1976d2;
+    min-height: 30px;
+}
+
+QWidget#navGoalWidget QPushButton:hover,
+QWidget#setPoseWidget QPushButton:hover,
+QWidget#topologyRouteWidget QPushButton:hover {
+    background-color: #1565c0;
+    border-color: #1565c0;
+}
+
+QWidget#navGoalWidget QPushButton:pressed,
+QWidget#setPoseWidget QPushButton:pressed,
+QWidget#topologyRouteWidget QPushButton:pressed {
+    background-color: #0d47a1;
+    border-color: #0d47a1;
+}
+
+QWidget#navGoalWidget QPushButton:disabled,
+QWidget#setPoseWidget QPushButton:disabled,
+QWidget#topologyRouteWidget QPushButton:disabled {
+    background-color: #cfd8e3;
+    border-color: #cfd8e3;
+    color: #f8fafc;
+}
+
+QWidget#navGoalWidget QPushButton#deleteButton,
+QWidget#topologyRouteWidget QPushButton#deleteButton {
+    background-color: #fff5f5;
+    color: #d64545;
+    border: 1px solid #f1b5b5;
+}
+
+QWidget#navGoalWidget QPushButton#deleteButton:hover,
+QWidget#topologyRouteWidget QPushButton#deleteButton:hover {
+    background-color: #ffe6e6;
+    border-color: #e57373;
+}
+
+QWidget#navGoalWidget QPushButton#deleteButton:pressed,
+QWidget#topologyRouteWidget QPushButton#deleteButton:pressed {
+    background-color: #ffd9d9;
+    border-color: #d64545;
+}
+
+QWidget#navGoalWidget QPushButton#cancelButton,
+QWidget#setPoseWidget QPushButton#cancelButton,
+QWidget#topologyRouteWidget QPushButton#cancelButton {
+    background-color: #f5f7fa;
+    color: #5f6b7a;
+    border: 1px solid #d7dee7;
+}
+
+QWidget#navGoalWidget QPushButton#cancelButton:hover,
+QWidget#setPoseWidget QPushButton#cancelButton:hover,
+QWidget#topologyRouteWidget QPushButton#cancelButton:hover {
+    background-color: #eef2f7;
+    border-color: #bfc9d4;
+}
+
+QWidget#navGoalWidget QPushButton#cancelButton:pressed,
+QWidget#setPoseWidget QPushButton#cancelButton:pressed,
+QWidget#topologyRouteWidget QPushButton#cancelButton:pressed {
+    background-color: #e5ebf3;
+    border-color: #aeb9c5;
+}
+
+QWidget#setPoseWidget QPushButton#okButton {
+    background-color: #27ae60;
+    border-color: #27ae60;
+}
+
+QWidget#setPoseWidget QPushButton#okButton:hover {
+    background-color: #229954;
+    border-color: #229954;
+}
+
+QWidget#setPoseWidget QPushButton#okButton:pressed {
+    background-color: #1d8348;
+    border-color: #1d8348;
+}

@@ -55,7 +55,7 @@ rclcomm::rclcomm() {
 bool rclcomm::Start() {
   // ---- 1. 初始化 ROS2 节点和多线程执行器 ----
   rclcpp::init(0, nullptr);
-  m_executor = new rclcpp::executors::MultiThreadedExecutor;
+  m_executor = std::make_unique<rclcpp::executors::MultiThreadedExecutor>();
 
   node = rclcpp::Node::make_shared("ros_qt5_gui_app");
   m_executor->add_node(node);
@@ -201,19 +201,19 @@ bool rclcomm::Start() {
       std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   // ---- 6. 订阅内部消息总线（UI → ROS 指令转发） ----
-  SUBSCRIBE(MSG_ID_SET_NAV_GOAL_POSE, [this](const basic::RobotPose& pose) {
+  nav_goal_sub_id_ = SUBSCRIBE(MSG_ID_SET_NAV_GOAL_POSE, [this](const basic::RobotPose& pose) {
     std::cout << "recv nav goal pose:" << pose << std::endl;
     PubNavGoal(pose);
   });
-  SUBSCRIBE(MSG_ID_SET_RELOC_POSE, [this](const basic::RobotPose& pose) {
+  reloc_pose_sub_id_ = SUBSCRIBE(MSG_ID_SET_RELOC_POSE, [this](const basic::RobotPose& pose) {
     std::cout << "recv reloc pose:" << pose << std::endl;
     PubRelocPose(pose);
   });
-  SUBSCRIBE(MSG_ID_SET_ROBOT_SPEED, [this](const basic::RobotSpeed& speed) {
+  robot_speed_sub_id_ = SUBSCRIBE(MSG_ID_SET_ROBOT_SPEED, [this](const basic::RobotSpeed& speed) {
     std::cout << "recv robot speed:" << speed << std::endl;
     PubRobotSpeed(speed);
   });
-  SUBSCRIBE(MSG_ID_TOPOLOGY_MAP_UPDATE, [this](const TopologyMap& topology_map) {
+  topology_update_sub_id_ = SUBSCRIBE(MSG_ID_TOPOLOGY_MAP_UPDATE, [this](const TopologyMap& topology_map) {
     std::cout << "recv topology map update:" << topology_map.map_name << std::endl;
     topology_msgs::msg::TopologyMap ros_msg = ConvertToRosMsg(topology_map);
     topology_map_update_publisher_->publish(ros_msg);
@@ -226,7 +226,60 @@ bool rclcomm::Start() {
 
 /// @brief 关闭 ROS2 通信
 bool rclcomm::Stop() {
-  rclcpp::shutdown();
+  if (nav_goal_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_SET_NAV_GOAL_POSE, nav_goal_sub_id_);
+    nav_goal_sub_id_ = 0;
+  }
+  if (reloc_pose_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_SET_RELOC_POSE, reloc_pose_sub_id_);
+    reloc_pose_sub_id_ = 0;
+  }
+  if (robot_speed_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_SET_ROBOT_SPEED, robot_speed_sub_id_);
+    robot_speed_sub_id_ = 0;
+  }
+  if (topology_update_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_TOPOLOGY_MAP_UPDATE, topology_update_sub_id_);
+    topology_update_sub_id_ = 0;
+  }
+
+  init_flag_ = false;
+
+  if (m_executor) {
+    m_executor->cancel();
+    if (node) {
+      m_executor->remove_node(node);
+    }
+  }
+
+  image_subscriber_list_.clear();
+  topology_map_subscriber_.reset();
+  robot_footprint_subscriber_.reset();
+  global_path_subscriber_.reset();
+  local_path_subscriber_.reset();
+  odometry_subscriber_.reset();
+  battery_state_subscriber_.reset();
+  laser_scan_subscriber_.reset();
+  global_cost_map_subscriber_.reset();
+  local_cost_map_subscriber_.reset();
+  map_subscriber_.reset();
+
+  topology_map_update_publisher_.reset();
+  nav_goal_publisher_.reset();
+  reloc_pose_publisher_.reset();
+  speed_publisher_.reset();
+
+  transform_listener_.reset();
+  tf_buffer_.reset();
+  callback_group_laser.reset();
+  callback_group_other.reset();
+  node.reset();
+
+  if (rclcpp::ok()) {
+    rclcpp::shutdown();
+  }
+
+  m_executor.reset();
   return true;
 }
 

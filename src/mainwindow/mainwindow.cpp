@@ -27,6 +27,17 @@
 #include "ui_mainwindow.h"
 #include <QButtonGroup>
 #include <QMessageBox>
+#include <QApplication>
+
+namespace {
+QString loadAppStyleSheet() {
+  QFile file(":/qss/app.qss");
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    return {};
+  }
+  return QString::fromUtf8(file.readAll());
+}
+}  // namespace
 
 #include "widgets/speed_ctrl.h"
 #include "widgets/display_config_widget.h"
@@ -44,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
   Q_INIT_RESOURCE(images);
   Q_INIT_RESOURCE(media);
+  Q_INIT_RESOURCE(styles);
   LOG_INFO(" MainWindow init thread id" << QThread::currentThreadId());
   qRegisterMetaType<std::string>("std::string");
   qRegisterMetaType<RobotPose>("RobotPose");
@@ -74,7 +86,25 @@ MainWindow::MainWindow(QWidget *parent)
   });
 }
 
-MainWindow::~MainWindow() { delete ui; }
+MainWindow::~MainWindow() {
+  if (odom_pose_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_ODOM_POSE, odom_pose_sub_id_);
+    odom_pose_sub_id_ = 0;
+  }
+  if (robot_pose_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_ROBOT_POSE, robot_pose_sub_id_);
+    robot_pose_sub_id_ = 0;
+  }
+  if (battery_state_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_BATTERY_STATE, battery_state_sub_id_);
+    battery_state_sub_id_ = 0;
+  }
+  if (image_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_IMAGE, image_sub_id_);
+    image_sub_id_ = 0;
+  }
+  delete ui;
+}
 
 // 工具栏按钮集合（用于跨方法传递局部控件指针）
 struct MainWindow::MapToolBarButtons {
@@ -104,71 +134,17 @@ struct MainWindow::EditToolBarWidgets {
 // UI 初始化入口：调度各子方法完成完整布局
 void MainWindow::setupUi() {
   ui->setupUi(this);
-  auto [center_layout, center_h_layout] = initGlobalStyle();
-  auto toolbar_btns = createMapToolBar(center_layout);
-  auto edit_widgets = createEditToolBar(center_h_layout);
-  center_layout->addLayout(center_h_layout);
-  createDockPanels(center_layout, center_h_layout);
+  initGlobalStyle();
+  auto toolbar_btns = createMapToolBar(ui->verticalLayout);
+  auto edit_widgets = createEditToolBar(ui->centerHLayout);
+  createDockPanels(ui->verticalLayout, ui->centerHLayout);
   connectSignals(toolbar_btns, edit_widgets);
 }
 
-// 全局样式 + DockManager 配置，返回中心布局
-std::pair<QVBoxLayout*, QHBoxLayout*> MainWindow::initGlobalStyle() {
-  
-  // 设置主窗体现代化样式
-  this->setStyleSheet(R"(
-    QMainWindow {
-      background-color: #f5f5f5;
-      color: #333333;
-    }
-    
-    QToolBar {
-      background-color: #ffffff;
-      border: none;
-      spacing: 8px;
-      padding: 4px;
-    }
-    
-    QStatusBar {
-      background-color: #ffffff;
-      border-top: 1px solid #e0e0e0;
-    }
-    
-    QMenuBar {
-      background-color: #ffffff;
-      border-bottom: 1px solid #e0e0e0;
-      color: #333333;
-    }
-    
-    QMenuBar::item {
-      background-color: transparent;
-      padding: 8px 12px;
-      border-radius: 4px;
-    }
-    
-    QMenuBar::item:selected {
-      background-color: #e3f2fd;
-      color: #1976d2;
-    }
-    
-    QMenu {
-      background-color: #ffffff;
-      border: 1px solid #e0e0e0;
-      border-radius: 6px;
-      padding: 4px;
-    }
-    
-    QMenu::item {
-      padding: 8px 16px;
-      border-radius: 4px;
-    }
-    
-    QMenu::item:selected {
-      background-color: #e3f2fd;
-      color: #1976d2;
-    }
-  )");
-  
+// 全局样式 + DockManager 配置
+void MainWindow::initGlobalStyle() {
+  qApp->setStyleSheet(loadAppStyleSheet());
+
   CDockManager::setConfigFlag(CDockManager::OpaqueSplitterResize, true);
   CDockManager::setConfigFlag(CDockManager::XmlCompressionEnabled, false);
   CDockManager::setConfigFlag(CDockManager::FocusHighlighting, true);
@@ -179,333 +155,44 @@ std::pair<QVBoxLayout*, QHBoxLayout*> MainWindow::initGlobalStyle() {
   CDockManager::setConfigFlag(CDockManager::ShowTabTextOnlyForActiveTab, true);
   CDockManager::setAutoHideConfigFlags(CDockManager::DefaultAutoHideConfig);
   dock_manager_ = new CDockManager(this);
-  QVBoxLayout *center_layout = new QVBoxLayout();    //垂直
-  QHBoxLayout *center_h_layout = new QHBoxLayout();  //水平
-
-  return {center_layout, center_h_layout};
+  ui->verticalLayout->setContentsMargins(0, 0, 0, 5);
+  ui->verticalLayout->setSpacing(5);
 }
 
 // 创建顶部地图工具栏（视图菜单、重定位、编辑、打开/保存地图、电池）
 MainWindow::MapToolBarButtons MainWindow::createMapToolBar(QVBoxLayout* center_layout) {
-  // ── 顶部地图工具栏 ──────────────────────────────────────────
-  QHBoxLayout *horizontalLayout_tools = new QHBoxLayout();
-  horizontalLayout_tools->setSpacing(6);
-  horizontalLayout_tools->setObjectName(
-      QString::fromUtf8(" horizontalLayout_tools"));
+  map_toolbar_widget_ = new MapToolBarWidget(this);
+  center_layout->insertWidget(0, map_toolbar_widget_);
 
-  // 现代化工具栏样式
-  QString modernToolButtonStyle = R"(
-    QToolButton {
-      border: 1px solid #e0e0e0;
-      border-radius: 6px;
-      background-color: #ffffff;
-      color: #333333;
-      padding: 6px 10px;
-      font-weight: 500;
-      font-size: 11px;
-      min-height: 40px;
-      max-height: 40px;
-    }
-    QToolButton:hover {
-      background-color: #f5f5f5;
-      border-color: #1976d2;
-    }
-    QToolButton:pressed {
-      background-color: #e3f2fd;
-      border-color: #1976d2;
-    }
-    QToolButton:checked {
-      background-color: #1976d2;
-      color: #ffffff;
-      border-color: #1976d2;
-    }
-  )";
+  QToolButton *view_menu_btn = map_toolbar_widget_->viewMenuButton();
+  QToolButton *reloc_btn = map_toolbar_widget_->relocButton();
+  QToolButton *edit_map_btn = map_toolbar_widget_->editMapButton();
+  QToolButton *open_map_btn = map_toolbar_widget_->openMapButton();
+  QToolButton *save_map_btn = map_toolbar_widget_->saveMapButton();
+  QToolButton *re_save_map_btn = map_toolbar_widget_->saveAsButton();
 
-  // 添加 "view" 菜单按钮
-  QToolButton *view_menu_btn = new QToolButton();
-  QIcon view_icon;
-  view_icon.addFile(QString::fromUtf8(":/images/list_view.svg"),
-                    QSize(32, 32), QIcon::Normal, QIcon::Off);
-  view_menu_btn->setIcon(view_icon);
-  view_menu_btn->setIconSize(QSize(20, 20));
-  view_menu_btn->setPopupMode(QToolButton::InstantPopup);
   view_menu_btn->setMenu(ui->menuView);
-  view_menu_btn->setStyleSheet(modernToolButtonStyle);
-  view_menu_btn->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-  horizontalLayout_tools->addWidget(view_menu_btn);
-
-  // 隐藏默认菜单栏
   menuBar()->setVisible(false);
 
-  QToolButton *reloc_btn = new QToolButton();
-  reloc_btn->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-  reloc_btn->setStyleSheet(modernToolButtonStyle);
-
-  QIcon icon4;
-  icon4.addFile(QString::fromUtf8(":/images/reloc2.svg"),
-                QSize(32, 32), QIcon::Normal, QIcon::Off);
-  reloc_btn->setIcon(icon4);
-  reloc_btn->setText("重定位");
-  reloc_btn->setIconSize(QSize(20, 20));
-  horizontalLayout_tools->addWidget(reloc_btn);
-  
-  QIcon icon5;
-  icon5.addFile(QString::fromUtf8(":/images/edit.svg"),
-                QSize(32, 32), QIcon::Normal, QIcon::Off);
-  QToolButton *edit_map_btn = new QToolButton();
-  edit_map_btn->setIcon(icon5);
-  edit_map_btn->setText("编辑地图");
-  edit_map_btn->setIconSize(QSize(20, 20));
-  edit_map_btn->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-  edit_map_btn->setStyleSheet(modernToolButtonStyle);
-  horizontalLayout_tools->addWidget(edit_map_btn);
-
-  QIcon icon6;
-  icon6.addFile(QString::fromUtf8(":/images/open.svg"),
-                QSize(32, 32), QIcon::Normal, QIcon::Off);
-  QToolButton *open_map_btn = new QToolButton();
-  open_map_btn->setIcon(icon6);
-  open_map_btn->setText("打开地图");
-  open_map_btn->setIconSize(QSize(20, 20));
-  open_map_btn->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-  open_map_btn->setStyleSheet(modernToolButtonStyle);
-  horizontalLayout_tools->addWidget(open_map_btn);
-
-  QIcon icon8;
-  icon8.addFile(QString::fromUtf8(":/images/save.svg"),
-                QSize(32, 32), QIcon::Normal, QIcon::Off);
-
-  QToolButton *save_map_btn = new QToolButton();
-  save_map_btn->setIcon(icon8);
-  save_map_btn->setText("保存地图");
-  save_map_btn->setIconSize(QSize(20, 20));
-  save_map_btn->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-  save_map_btn->setStyleSheet(modernToolButtonStyle);
-  horizontalLayout_tools->addWidget(save_map_btn);
-
-  QIcon icon7;
-  icon7.addFile(QString::fromUtf8(":/images/re_save.svg"),
-                QSize(32, 32), QIcon::Normal, QIcon::Off);
-  QToolButton *re_save_map_btn = new QToolButton();
-  re_save_map_btn->setIcon(icon7);
-  re_save_map_btn->setText("另存为");
-  re_save_map_btn->setIconSize(QSize(20, 20));
-  re_save_map_btn->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-  re_save_map_btn->setStyleSheet(modernToolButtonStyle);
-  horizontalLayout_tools->addWidget(re_save_map_btn);
-  center_layout->addLayout(horizontalLayout_tools);
-
-  horizontalLayout_tools->addItem(
-      new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Minimum));
-
-
-  // ── 电池电量指示器 ─────────────────────────────────────────
-  battery_bar_ = new QProgressBar();
-  battery_bar_->setObjectName(QString::fromUtf8("battery_bar_"));
-  battery_bar_->setMaximumSize(QSize(120, 24));
-  battery_bar_->setAutoFillBackground(true);
-  battery_bar_->setStyleSheet(R"(
-    QProgressBar#battery_bar_ {
-      border: 2px solid #e0e0e0;
-      border-radius: 12px;
-      background-color: #f5f5f5;
-      text-align: center;
-      color: #333333;
-      font-weight: 500;
-      font-size: 11px;
-    }
-    
-    QProgressBar::chunk {
-      background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-        stop:0 #4caf50, stop:0.5 #8bc34a, stop:1 #4caf50);
-      border-radius: 10px;
-      margin: 2px;
-    }
-  )");
-
-  battery_bar_->setAlignment(Qt::AlignCenter);
-  horizontalLayout_tools->addWidget(battery_bar_);
-
-  QLabel *label_11 = new QLabel();
-  label_11->setObjectName(QString::fromUtf8("label_11"));
-  label_11->setMinimumSize(QSize(24, 24));
-  label_11->setMaximumSize(QSize(24, 24));
-  label_11->setPixmap(QPixmap(QString::fromUtf8(":/images/power-v.png")));
-  horizontalLayout_tools->addWidget(label_11);
-
-  label_power_ = new QLabel();
-  label_power_->setObjectName(QString::fromUtf8("label_power_"));
-  label_power_->setMinimumSize(QSize(50, 24));
-  label_power_->setMaximumSize(QSize(50, 24));
-  label_power_->setStyleSheet(R"(
-    QLabel {
-      color: #333333;
-      font-weight: 500;
-      font-size: 11px;
-      padding: 4px;
-    }
-  )");
-  horizontalLayout_tools->addWidget(label_power_);
+  battery_bar_ = map_toolbar_widget_->batteryBar();
+  label_power_ = map_toolbar_widget_->powerLabel();
   SlotSetBatteryStatus(0, 0);
-  
+
   return {reloc_btn, edit_map_btn, open_map_btn, save_map_btn, re_save_map_btn};
 }
 
 // 创建左侧地图编辑工具栏（鼠标、点位、拓扑连接、橡皮擦、画笔、线段）
 MainWindow::EditToolBarWidgets MainWindow::createEditToolBar(QHBoxLayout* center_h_layout) {
-  // ── 左侧地图编辑工具栏 ────────────────────────────────────
-  QWidget *tools_edit_map_widget = new QWidget();
-  tools_edit_map_widget->setStyleSheet(R"(
-    QWidget {
-      background-color: #ffffff;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-    }
-  )");
+  edit_toolbar_widget_ = new EditToolBarWidget();
 
-  QVBoxLayout *layout_tools_edit_map = new QVBoxLayout();
-  tools_edit_map_widget->setLayout(layout_tools_edit_map);
-  layout_tools_edit_map->setSpacing(4);
-  layout_tools_edit_map->setContentsMargins(8, 8, 8, 8);
-  layout_tools_edit_map->setObjectName(
-      QString::fromUtf8(" layout_tools_edit_map"));
-  
-  // 现代化编辑工具按钮样式
-  QString modernEditButtonStyle = R"(
-    QToolButton {
-      border: 1px solid #e0e0e0;
-      border-radius: 6px;
-      background-color: #ffffff;
-      color: #333333;
-      padding: 6px;
-      font-size: 10px;
-      font-weight: 500;
-    }
-    QToolButton:hover {
-      background-color: #f5f5f5;
-      border-color: #1976d2;
-    }
-    QToolButton:pressed {
-      background-color: #e3f2fd;
-      border-color: #1976d2;
-    }
-    QToolButton:checked {
-      background-color: #1976d2;
-      color: #ffffff;
-      border-color: #1976d2;
-    }
-  )";
-  
-  //地图编辑 设置鼠标按钮
-  QToolButton *normal_cursor_btn = new QToolButton();
-  normal_cursor_btn->setCheckable(true);
-  normal_cursor_btn->setStyleSheet(modernEditButtonStyle);
-  normal_cursor_btn->setToolTip("鼠标");
-  normal_cursor_btn->setCursor(Qt::PointingHandCursor);
-  normal_cursor_btn->setIconSize(QSize(24, 24));
+  QToolButton *normal_cursor_btn = edit_toolbar_widget_->normalCursorButton();
+  QToolButton *add_point_btn = edit_toolbar_widget_->addPointButton();
+  QToolButton *add_topology_path_btn = edit_toolbar_widget_->addTopologyPathButton();
+  QToolButton *add_region_btn = edit_toolbar_widget_->addRegionButton();
+  QToolButton *erase_btn = edit_toolbar_widget_->eraseButton();
+  QToolButton *draw_pen_btn = edit_toolbar_widget_->drawPenButton();
+  QToolButton *draw_line_btn = edit_toolbar_widget_->drawLineButton();
 
-  QIcon pose_tool_btn_icon;
-  pose_tool_btn_icon.addFile(QString::fromUtf8(":/images/cursor_point_btn.svg"),
-                             QSize(), QIcon::Normal, QIcon::Off);
-  normal_cursor_btn->setIcon(pose_tool_btn_icon);
-  layout_tools_edit_map->addWidget(normal_cursor_btn);
-
-  //添加点位按钮
-  QToolButton *add_point_btn = new QToolButton();
-  add_point_btn->setCheckable(true);
-  add_point_btn->setStyleSheet(modernEditButtonStyle);
-  add_point_btn->setToolTip("添加工位点");
-  add_point_btn->setCursor(Qt::PointingHandCursor);
-  add_point_btn->setIconSize(QSize(24, 24));
-
-  QIcon add_point_btn_icon;
-  add_point_btn_icon.addFile(QString::fromUtf8(":/images/point_btn.svg"),
-                             QSize(), QIcon::Normal, QIcon::Off);
-  add_point_btn->setIcon(add_point_btn_icon);
-  layout_tools_edit_map->addWidget(add_point_btn);
-
-  QToolButton *add_topology_path_btn = new QToolButton();
-  add_topology_path_btn->setCheckable(true);
-  add_topology_path_btn->setStyleSheet(modernEditButtonStyle);
-  add_topology_path_btn->setToolTip("连接工位点");
-  add_topology_path_btn->setCursor(Qt::PointingHandCursor);
-  add_topology_path_btn->setIconSize(QSize(24, 24));
-
-  QIcon add_topology_path_btn_icon;
-  add_topology_path_btn_icon.addFile(QString::fromUtf8(":/images/topo_link_btn.svg"),
-                                     QSize(), QIcon::Normal, QIcon::Off);
-  add_topology_path_btn->setIcon(add_topology_path_btn_icon);
-  layout_tools_edit_map->addWidget(add_topology_path_btn);
-  add_topology_path_btn->setEnabled(true);
-  
-  //添加区域按钮
-  QToolButton *add_region_btn = new QToolButton();
-  add_region_btn->setCheckable(true);
-  add_region_btn->setStyleSheet(modernEditButtonStyle);
-  add_region_btn->setToolTip("添加区域");
-  add_region_btn->setCursor(Qt::PointingHandCursor);
-  add_region_btn->setIconSize(QSize(24, 24));
-
-  QIcon add_region_btn_icon;
-  add_region_btn_icon.addFile(QString::fromUtf8(":/images/region_btn.svg"),
-                              QSize(), QIcon::Normal, QIcon::Off);
-  add_region_btn->setIcon(add_region_btn_icon);
-  add_region_btn->setEnabled(false);
-  layout_tools_edit_map->addWidget(add_region_btn);
-
-  //分隔
-  QFrame *separator = new QFrame();
-  separator->setFrameShape(QFrame::HLine);
-  separator->setFrameShadow(QFrame::Sunken);
-  separator->setStyleSheet("QFrame { background-color: #e0e0e0; }");
-  layout_tools_edit_map->addWidget(separator);
-
-  //橡皮擦按钮
-  QToolButton *erase_btn = new QToolButton();
-  erase_btn->setCheckable(true);
-  erase_btn->setStyleSheet(modernEditButtonStyle);
-  erase_btn->setToolTip("橡皮擦");
-  erase_btn->setCursor(Qt::PointingHandCursor);
-  erase_btn->setIconSize(QSize(24, 24));
-
-  QIcon erase_btn_icon;
-  erase_btn_icon.addFile(QString::fromUtf8(":/images/erase_btn.svg"),
-                         QSize(), QIcon::Normal, QIcon::Off);
-  erase_btn->setIcon(erase_btn_icon);
-  layout_tools_edit_map->addWidget(erase_btn);
-  
-  //画笔按钮
-  QToolButton *draw_pen_btn = new QToolButton();
-  draw_pen_btn->setCheckable(true);
-  draw_pen_btn->setStyleSheet(modernEditButtonStyle);
-  draw_pen_btn->setToolTip("障碍物绘制");
-  draw_pen_btn->setCursor(Qt::PointingHandCursor);
-  draw_pen_btn->setIconSize(QSize(24, 24));
-
-  QIcon draw_pen_btn_icon;
-  draw_pen_btn_icon.addFile(QString::fromUtf8(":/images/pen.svg"),
-                            QSize(), QIcon::Normal, QIcon::Off);
-  draw_pen_btn->setIcon(draw_pen_btn_icon);
-  layout_tools_edit_map->addWidget(draw_pen_btn);
-  
-  //线段按钮
-  QToolButton *draw_line_btn = new QToolButton();
-  draw_line_btn->setCheckable(true);
-  draw_line_btn->setStyleSheet(modernEditButtonStyle);
-  draw_line_btn->setToolTip("线段绘制");
-  draw_line_btn->setCursor(Qt::PointingHandCursor);
-  draw_line_btn->setIconSize(QSize(24, 24));
-
-  QIcon draw_line_btn_icon;
-  draw_line_btn_icon.addFile(QString::fromUtf8(":/images/line_btn.svg"),
-                             QSize(), QIcon::Normal, QIcon::Off);
-  draw_line_btn->setIcon(draw_line_btn_icon);
-  layout_tools_edit_map->addWidget(draw_line_btn);
-
-  layout_tools_edit_map->addItem(
-      new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
-  
-  // 创建按钮组实现互斥选择
   QButtonGroup *edit_map_button_group = new QButtonGroup(this);
   edit_map_button_group->addButton(normal_cursor_btn);
   edit_map_button_group->addButton(add_point_btn);
@@ -514,15 +201,13 @@ MainWindow::EditToolBarWidgets MainWindow::createEditToolBar(QHBoxLayout* center
   edit_map_button_group->addButton(erase_btn);
   edit_map_button_group->addButton(draw_pen_btn);
   edit_map_button_group->addButton(draw_line_btn);
-  
-  // 默认选中normal_cursor_btn
+
   normal_cursor_btn->setChecked(true);
-  
-  tools_edit_map_widget->hide();
-  center_h_layout->addWidget(tools_edit_map_widget);
 
+  edit_toolbar_widget_->hide();
+  center_h_layout->addWidget(edit_toolbar_widget_);
 
-  return {tools_edit_map_widget, normal_cursor_btn, add_point_btn,
+  return {edit_toolbar_widget_, normal_cursor_btn, add_point_btn,
           add_topology_path_btn, add_region_btn, erase_btn, draw_pen_btn, draw_line_btn};
 }
 
@@ -538,13 +223,8 @@ void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* cente
   center_layout->setSpacing(5);
 
   // ── 中心主窗体（Dock 容器）────────────────────────────────
-  QWidget *center_widget = new QWidget();
-  center_widget->setStyleSheet(R"(
-    QWidget {
-      background-color: #ffffff;
-    }
-  )");
-  center_widget->setLayout(center_layout);
+  QWidget *center_widget = ui->centralwidget;
+  center_widget->setObjectName("centralWidgetHost");
   CDockWidget *CentralDockWidget = new CDockWidget("CentralWidget");
   CentralDockWidget->setWidget(center_widget);
   center_docker_area_ = dock_manager_->setCentralWidget(CentralDockWidget);
@@ -589,87 +269,18 @@ void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* cente
   ui->menuView->addAction(DisplayConfigDockWidget->toggleViewAction());
 
   // ── 导航任务列表 Dock ─────────────────────────────────────
-  QWidget *task_list_widget = new QWidget();
+  task_list_panel_widget_ = new TaskListPanelWidget();
   nav_goal_table_view_ = new NavGoalTableView();
-  QVBoxLayout *horizontalLayout_13 = new QVBoxLayout();
-  horizontalLayout_13->addWidget(nav_goal_table_view_);
-  task_list_widget->setLayout(horizontalLayout_13);
+  task_list_panel_widget_->tableContainerLayout()->addWidget(nav_goal_table_view_);
   ads::CDockWidget *nav_goal_list_dock_widget = new ads::CDockWidget("Task");
-  
-  // 现代化按钮样式
-  QString modernButtonStyle = R"(
-    QPushButton {
-      background-color: #1976d2;
-      color: #ffffff;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-weight: 500;
-      font-size: 12px;
-    }
-    QPushButton:hover {
-      background-color: #1565c0;
-    }
-    QPushButton:pressed {
-      background-color: #0d47a1;
-    }
-    QPushButton:disabled {
-      background-color: #e0e0e0;
-      color: #999999;
-    }
-  )";
-  
-  QPushButton *btn_add_one_goal = new QPushButton("Add Point");
-  btn_add_one_goal->setStyleSheet(modernButtonStyle);
-  
-  QHBoxLayout *horizontalLayout_15 = new QHBoxLayout();
-  QPushButton *btn_start_task_chain = new QPushButton("Start Task Chain");
-  btn_start_task_chain->setStyleSheet(modernButtonStyle);
-  
-  QCheckBox *loop_task_checkbox = new QCheckBox("Loop Task");
-  loop_task_checkbox->setStyleSheet(R"(
-    QCheckBox {
-      color: #333333;
-      font-weight: 500;
-      font-size: 12px;
-      spacing: 8px;
-    }
-    QCheckBox::indicator {
-      width: 16px;
-      height: 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 3px;
-      background-color: #ffffff;
-    }
-    QCheckBox::indicator:checked {
-      background-color: #1976d2;
-      border-color: #1976d2;
-    }
-    QCheckBox::indicator:checked::after {
-      content: "✓";
-      color: #ffffff;
-      font-weight: bold;
-    }
-  )");
-  
-  QHBoxLayout *horizontalLayout_14 = new QHBoxLayout();
-  horizontalLayout_15->addWidget(btn_add_one_goal);
-  horizontalLayout_14->addWidget(btn_start_task_chain);
-  horizontalLayout_14->addWidget(loop_task_checkbox);
-  
-  QPushButton *btn_load_task_chain = new QPushButton("Load Task Chain");
-  QPushButton *btn_save_task_chain = new QPushButton("Save Task Chain");
-  btn_load_task_chain->setStyleSheet(modernButtonStyle);
-  btn_save_task_chain->setStyleSheet(modernButtonStyle);
-  
-  QHBoxLayout *horizontalLayout_16 = new QHBoxLayout();
-  horizontalLayout_16->addWidget(btn_load_task_chain);
-  horizontalLayout_16->addWidget(btn_save_task_chain);
 
-  horizontalLayout_13->addLayout(horizontalLayout_15);
-  horizontalLayout_13->addLayout(horizontalLayout_14);
-  horizontalLayout_13->addLayout(horizontalLayout_16);
-  nav_goal_list_dock_widget->setWidget(task_list_widget);
+  QPushButton *btn_add_one_goal = task_list_panel_widget_->addGoalButton();
+  QPushButton *btn_start_task_chain = task_list_panel_widget_->startTaskChainButton();
+  QCheckBox *loop_task_checkbox = task_list_panel_widget_->loopTaskCheckBox();
+  QPushButton *btn_load_task_chain = task_list_panel_widget_->loadTaskChainButton();
+  QPushButton *btn_save_task_chain = task_list_panel_widget_->saveTaskChainButton();
+
+  nav_goal_list_dock_widget->setWidget(task_list_panel_widget_);
   nav_goal_list_dock_widget->setMinimumSizeHintMode(
       CDockWidget::MinimumSizeHintFromDockWidget);
   nav_goal_list_dock_widget->setMinimumSize(200, 150);
@@ -996,26 +607,40 @@ void MainWindow::closeChannel() { channel_manager_.CloseChannel(); }
 
 // 注册消息总线订阅：里程计、机器人位姿、电池状态、图像数据
 void MainWindow::registerChannel() {
-  SUBSCRIBE(MSG_ID_ODOM_POSE, [this](const RobotState& data) {
+  if (odom_pose_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_ODOM_POSE, odom_pose_sub_id_);
+  }
+  if (robot_pose_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_ROBOT_POSE, robot_pose_sub_id_);
+  }
+  if (battery_state_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_BATTERY_STATE, battery_state_sub_id_);
+  }
+  if (image_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_IMAGE, image_sub_id_);
+  }
+
+  odom_pose_sub_id_ = SUBSCRIBE(MSG_ID_ODOM_POSE, [this](const RobotState& data) {
     updateOdomInfo(data);
   });
 
-  SUBSCRIBE(MSG_ID_ROBOT_POSE, [this](const RobotPose& robot_pose) {
+  robot_pose_sub_id_ = SUBSCRIBE(MSG_ID_ROBOT_POSE, [this](const RobotPose& robot_pose) {
+      if (!nav_goal_table_view_ || !display_manager_) return;
       nav_goal_table_view_->UpdateRobotPose(robot_pose);
       Display::ViewManager* view_manager = dynamic_cast<Display::ViewManager*>(display_manager_->GetViewPtr());
       if (view_manager) {
-        view_manager->UpdateRobotPos("Robot: (" + QString::number(robot_pose.x, 'f', 2) + ", " + 
-                                     QString::number(robot_pose.y, 'f', 2) + ", " + 
+        view_manager->UpdateRobotPos("Robot: (" + QString::number(robot_pose.x, 'f', 2) + ", " +
+                                     QString::number(robot_pose.y, 'f', 2) + ", " +
                                      QString::number(robot_pose.theta, 'f', 2) + ")");
       }
   });
 
-  SUBSCRIBE(MSG_ID_BATTERY_STATE, [this](const std::map<std::string, std::string>& map) {
+  battery_state_sub_id_ = SUBSCRIBE(MSG_ID_BATTERY_STATE, [this](const std::map<std::string, std::string>& map) {
     this->SlotSetBatteryStatus(std::stod(map.at("percent")),
                                std::stod(map.at("voltage")));
   });
 
-  SUBSCRIBE(MSG_ID_IMAGE, [this](const std::pair<std::string, std::shared_ptr<cv::Mat>>& location_to_mat) {
+  image_sub_id_ = SUBSCRIBE(MSG_ID_IMAGE, [this](const std::pair<std::string, std::shared_ptr<cv::Mat>>& location_to_mat) {
       this->SlotRecvImage(location_to_mat.first, location_to_mat.second);
   });
 }

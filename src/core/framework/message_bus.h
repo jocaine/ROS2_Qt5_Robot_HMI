@@ -126,15 +126,11 @@ class MessageBus {
       //           << ", subscribers: " << subscriber_count);
       for (auto& pair : it->second) {
         if (pair.second) {
-          // 保存数据的副本（因为可能在异步调用中使用）
-          auto callback_ptr = pair.second.get();
+          auto callback_shared = pair.second;
           auto data_copy = std::make_shared<T>(data);
-          // typeid(T) 返回的引用在整个程序生命周期内有效，可以直接使用
           const std::type_info* type_ptr = &typeid(T);
-          detail::ThreadSafeCallbackExecutor::Execute([callback_ptr, data_copy, type_ptr]() {
-            // TypedCallback 内部会进行类型匹配检查
-            // LOG_INFO("[MessageBus::Publish] Executing callback, type: " << type_ptr->name());
-            callback_ptr->call(static_cast<const void*>(data_copy.get()), *type_ptr);
+          detail::ThreadSafeCallbackExecutor::Execute([callback_shared, data_copy, type_ptr]() {
+            callback_shared->call(static_cast<const void*>(data_copy.get()), *type_ptr);
           });
         }
       }
@@ -150,7 +146,7 @@ class MessageBus {
     std::lock_guard<std::mutex> lock(mutex_);
     CallbackId id = next_callback_id_.fetch_add(1);
     // 直接存储类型 T 的回调，无需 std::any 转换
-    subscribers_[topic][id] = std::make_unique<TypedCallback<T>>(callback);
+    subscribers_[topic][id] = std::make_shared<TypedCallback<T>>(callback);
     LOG_INFO("[MessageBus::Subscribe] topic: " << topic 
               << ", type: " << typeid(T).name() 
               << ", callback_id: " << id);
@@ -180,7 +176,7 @@ class MessageBus {
   MessageBus& operator=(const MessageBus&) = delete;
   
   mutable std::mutex mutex_;
-  std::map<std::string, std::map<CallbackId, std::unique_ptr<CallbackBase>>> subscribers_;
+  std::map<std::string, std::map<CallbackId, std::shared_ptr<CallbackBase>>> subscribers_;
   std::atomic<CallbackId> next_callback_id_{1};
 };
 

@@ -65,21 +65,21 @@ DisplayManager::DisplayManager() {
   InitUi();
 
   // ── 消息订阅 ──────────────────────────────────────
-  SUBSCRIBE(MSG_ID_TOPOLOGY_MAP, [this](const TopologyMap& data) {
+  topology_map_sub_id_ = SUBSCRIBE(MSG_ID_TOPOLOGY_MAP, [this](const TopologyMap& data) {
     scene_manager_ptr_->UpdateTopologyMap(data);
   });
 
-  SUBSCRIBE(MSG_ID_OCCUPANCY_MAP, [this](const OccupancyMap& data) {
+  occupancy_map_sub_id_ = SUBSCRIBE(MSG_ID_OCCUPANCY_MAP, [this](const OccupancyMap& data) {
     map_data_ = data;
   });
 
-  SUBSCRIBE(MSG_ID_ROBOT_POSE, [this](const RobotPose& data) {
+  robot_pose_sub_id_ = SUBSCRIBE(MSG_ID_ROBOT_POSE, [this](const RobotPose& data) {
     if (!is_reloc_mode_) {
       UpdateRobotPose(data);
     }
   });
 
-  SUBSCRIBE(MSG_ID_LASER_SCAN, [this](const LaserScan& data) {
+  laser_scan_sub_id_ = SUBSCRIBE(MSG_ID_LASER_SCAN, [this](const LaserScan& data) {
     auto* laser_display = dynamic_cast<LaserPoints*>(GetDisplay(DISPLAY_LASER));
     if (laser_display) {
       std::vector<Point> transformed_points = transLaserPoint(data.data);
@@ -88,7 +88,24 @@ DisplayManager::DisplayManager() {
   });
 }
 
-DisplayManager::~DisplayManager() {}
+DisplayManager::~DisplayManager() {
+  if (topology_map_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_TOPOLOGY_MAP, topology_map_sub_id_);
+    topology_map_sub_id_ = 0;
+  }
+  if (occupancy_map_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_OCCUPANCY_MAP, occupancy_map_sub_id_);
+    occupancy_map_sub_id_ = 0;
+  }
+  if (robot_pose_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_ROBOT_POSE, robot_pose_sub_id_);
+    robot_pose_sub_id_ = 0;
+  }
+  if (laser_scan_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_LASER_SCAN, laser_scan_sub_id_);
+    laser_scan_sub_id_ = 0;
+  }
+}
 
 // ══════════════════════════════════════════════════════════════
 //  显示图层访问

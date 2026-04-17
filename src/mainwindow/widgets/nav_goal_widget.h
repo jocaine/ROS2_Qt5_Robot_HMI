@@ -1,19 +1,18 @@
 #pragma once
-#include <QCalendarWidget>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QDoubleSpinBox>
-#include <QFileDialog>
-#include <QFileSystemModel>
-#include <QGraphicsItem>
-#include <QHBoxLayout>
-#include <QLineEdit>
-#include <QtWidgets/QListWidget>
+
+#include <memory>
+
 #include "algorithm.h"
 #include "point_type.h"
-#include "widgets/joystick.h"
+#include "widgets/floating_panel_widget.h"
+
+namespace Ui {
+class NavGoalWidget;
+}
+
 using namespace basic;
-class NavGoalWidget : public QWidget {
+
+class NavGoalWidget : public FloatingPanelWidget {
   Q_OBJECT
  public:
   enum HandleResult { kSend = 0,
@@ -25,34 +24,25 @@ class NavGoalWidget : public QWidget {
     QString name;
   };
 
- protected:
-  void paintEvent(QPaintEvent *event) override;
-
  private:
-  QDoubleSpinBox *spinBox_x_;
-  QDoubleSpinBox *spinBox_y_;
-  QDoubleSpinBox *spinBox_theta_;
-  QLineEdit *lineEdit_name_;
-  QPushButton *button_edit_name_;
-  QPushButton *button_send_;
-  QPushButton *button_remove_;
-  QPushButton *button_cancel_;
+  std::unique_ptr<Ui::NavGoalWidget> ui_;
   QString original_name_;
-  
-  // 检查是否有控件正在被编辑
+
   bool IsAnyControlBeingEdited() const;
-  
+
  signals:
   void SignalPoseChanged(const RobotPose &pose);
-  void SignalHandleOver(const HandleResult &flag, const RobotPose &pose,const QString &name);
+  void SignalHandleOver(const HandleResult &flag, const RobotPose &pose, const QString &name);
   void SignalPointNameChanged(const QString &name);
+
  public slots:
   void SetPose(const PointInfo &pose);
   void SetEditMode(bool is_edit);
+
  private slots:
   void SlotUpdateValue(double);
 
  public:
-  NavGoalWidget(QWidget *parent = 0);
-  ~NavGoalWidget() {}
+  explicit NavGoalWidget(QWidget *parent = 0);
+  ~NavGoalWidget() override;
 };

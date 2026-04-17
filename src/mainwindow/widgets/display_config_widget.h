@@ -17,9 +17,14 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QComboBox>
+#include <memory>
 #include <map>
 #include <string>
 #include <vector>
+
+namespace Ui {
+class DisplayConfigWidget;
+}
 
 namespace Display {
 class DisplayManager;
@@ -63,6 +68,7 @@ class DisplayConfigWidget : public QWidget {
   void AutoSaveConfig();
   std::string ExtractChannelType(const std::string &channel_path);
   
+  std::unique_ptr<Ui::DisplayConfigWidget> ui_;
   Display::DisplayManager *display_manager_{nullptr};
   QVBoxLayout *main_layout_{nullptr};
   QTabWidget *tab_widget_{nullptr};

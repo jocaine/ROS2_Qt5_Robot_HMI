@@ -6,6 +6,7 @@
 #include "config/config_define.h"
 #include "msg/msg_info.h"
 #include "logger/logger.h"
+#include "ui_display_config_widget.h"
 #include <QDebug>
 #include <QFrame>
 #include <QMessageBox>
@@ -14,7 +15,8 @@
 #include <QTimer>
 
 DisplayConfigWidget::DisplayConfigWidget(QWidget *parent)
-    : QWidget(parent), robot_color_(QColor(0, 0, 255)) {
+    : QWidget(parent), ui_(std::make_unique<Ui::DisplayConfigWidget>()), robot_color_(QColor(0, 0, 255)) {
+  ui_->setupUi(this);
   InitUI();
   QTimer::singleShot(3000, this, &DisplayConfigWidget::LoadConfig);
 }
@@ -22,81 +24,21 @@ DisplayConfigWidget::DisplayConfigWidget(QWidget *parent)
 DisplayConfigWidget::~DisplayConfigWidget() {}
 
 void DisplayConfigWidget::InitUI() {
-  main_layout_ = new QVBoxLayout(this);
-  main_layout_->setContentsMargins(10, 10, 10, 10);
-  main_layout_->setSpacing(8);
-  
-  QLabel *title_label = new QLabel("配置管理", this);
-  title_label->setStyleSheet(R"(
-    QLabel {
-      font-size: 16px;
-      font-weight: bold;
-      color: #333333;
-      padding: 5px;
-    }
-  )");
-  main_layout_->addWidget(title_label);
-  
-  tab_widget_ = new QTabWidget(this);
-  tab_widget_->setStyleSheet(R"(
-    QTabWidget::pane {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      background-color: #ffffff;
-    }
-    QTabBar::tab {
-      background-color: #f0f0f0;
-      color: #333333;
-      padding: 8px 16px;
-      border-top-left-radius: 4px;
-      border-top-right-radius: 4px;
-      margin-right: 2px;
-    }
-    QTabBar::tab:selected {
-      background-color: #ffffff;
-      color: #1976d2;
-      font-weight: bold;
-    }
-    QTabBar::tab:hover {
-      background-color: #e0e0e0;
-    }
-  )");
-  
+  main_layout_ = qobject_cast<QVBoxLayout *>(layout());
+  tab_widget_ = ui_->tabWidget;
+
   InitDisplayConfigTab();
   InitChannelConfigTab();
   InitKeyValueTab();
   InitImageConfigTab();
   InitRobotShapeTab();
-  
-  main_layout_->addWidget(tab_widget_);
 }
 
 void DisplayConfigWidget::InitDisplayConfigTab() {
-  display_tab_ = new QWidget();
-  QVBoxLayout *tab_layout = new QVBoxLayout(display_tab_);
-  tab_layout->setContentsMargins(10, 10, 10, 10);
-  tab_layout->setSpacing(8);
-  
-  QLabel *section_label = new QLabel("图层配置", display_tab_);
-  section_label->setStyleSheet(R"(
-    QLabel {
-      font-size: 14px;
-      font-weight: bold;
-      color: #333333;
-      padding: 5px;
-    }
-  )");
-  tab_layout->addWidget(section_label);
-  
-  display_scroll_area_ = new QScrollArea(display_tab_);
-  display_scroll_area_->setWidgetResizable(true);
-  display_scroll_area_->setFrameShape(QFrame::NoFrame);
-  display_scroll_area_->setStyleSheet("QScrollArea { border: none; background-color: transparent; }");
-  
-  display_scroll_content_ = new QWidget();
-  QVBoxLayout *scroll_layout = new QVBoxLayout(display_scroll_content_);
-  scroll_layout->setContentsMargins(0, 0, 0, 0);
-  scroll_layout->setSpacing(5);
+  display_tab_ = ui_->displayTab;
+  display_scroll_area_ = ui_->displayScrollArea;
+  display_scroll_content_ = ui_->displayScrollContent;
+  auto *scroll_layout = qobject_cast<QVBoxLayout *>(display_scroll_content_->layout());
   
   std::vector<std::pair<std::string, std::string>> display_types = {
     {DISPLAY_MAP, ":/images/classes/Map.png"},
@@ -195,62 +137,15 @@ void DisplayConfigWidget::InitDisplayConfigTab() {
   }
   
   scroll_layout->addItem(new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
-  display_scroll_area_->setWidget(display_scroll_content_);
-  tab_layout->addWidget(display_scroll_area_);
-  
-  tab_widget_->addTab(display_tab_, "图层配置");
 }
 
 void DisplayConfigWidget::InitKeyValueTab() {
-  key_value_tab_ = new QWidget();
-  QVBoxLayout *tab_layout = new QVBoxLayout(key_value_tab_);
-  tab_layout->setContentsMargins(10, 10, 10, 10);
-  tab_layout->setSpacing(10);
-  
-  QLabel *section_label = new QLabel("键值配置", key_value_tab_);
-  section_label->setStyleSheet(R"(
-    QLabel {
-      font-size: 14px;
-      font-weight: bold;
-      color: #333333;
-      padding: 5px;
-    }
-  )");
-  tab_layout->addWidget(section_label);
-  
-  key_value_scroll_area_ = new QScrollArea(key_value_tab_);
-  key_value_scroll_area_->setWidgetResizable(true);
-  key_value_scroll_area_->setFrameShape(QFrame::NoFrame);
-  key_value_scroll_area_->setStyleSheet("QScrollArea { border: none; background-color: transparent; }");
-  
-  key_value_scroll_content_ = new QWidget();
-  QVBoxLayout *scroll_layout = new QVBoxLayout(key_value_scroll_content_);
-  scroll_layout->setContentsMargins(0, 0, 0, 0);
-  scroll_layout->setSpacing(5);
-  
-  key_value_scroll_area_->setWidget(key_value_scroll_content_);
-  tab_layout->addWidget(key_value_scroll_area_);
-  
-  QPushButton *add_btn = new QPushButton("添加配置项", key_value_tab_);
-  add_btn->setFixedWidth(120);
-  add_btn->setStyleSheet(R"(
-    QPushButton {
-      border: 1px solid #4caf50;
-      border-radius: 4px;
-      padding: 6px;
-      background-color: #4caf50;
-      color: #ffffff;
-    }
-    QPushButton:hover {
-      background-color: #45a049;
-    }
-  )");
-  connect(add_btn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddKeyValue);
-  
-  tab_layout->addWidget(add_btn, 0, Qt::AlignLeft);
-  
-  tab_widget_->addTab(key_value_tab_, "键值配置");
-  
+  key_value_tab_ = ui_->keyValueTab;
+  key_value_scroll_area_ = ui_->keyValueScrollArea;
+  key_value_scroll_content_ = ui_->keyValueScrollContent;
+
+  connect(ui_->addKeyValueBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddKeyValue);
+
   RefreshKeyValueTab();
 }
 
@@ -339,285 +234,48 @@ void DisplayConfigWidget::RefreshKeyValueTab() {
 }
 
 void DisplayConfigWidget::InitImageConfigTab() {
-  image_tab_ = new QWidget();
-  QVBoxLayout *tab_layout = new QVBoxLayout(image_tab_);
-  tab_layout->setContentsMargins(10, 10, 10, 10);
-  tab_layout->setSpacing(10);
-  
-  QLabel *section_label = new QLabel("图像配置", image_tab_);
-  section_label->setStyleSheet(R"(
-    QLabel {
-      font-size: 14px;
-      font-weight: bold;
-      color: #333333;
-      padding: 5px;
-    }
-  )");
-  tab_layout->addWidget(section_label);
-  
-  image_table_ = new QTableWidget(0, 4, image_tab_);
-  image_table_->setHorizontalHeaderLabels(QStringList() << "位置" << "话题" << "启用" << "操作");
+  image_tab_ = ui_->imageTab;
+  image_table_ = ui_->imageTable;
   image_table_->horizontalHeader()->setStretchLastSection(true);
-  image_table_->setSelectionBehavior(QAbstractItemView::SelectRows);
-  image_table_->setStyleSheet(R"(
-    QTableWidget {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      background-color: #ffffff;
-      gridline-color: #e0e0e0;
-    }
-    QTableWidget::item {
-      padding: 4px;
-    }
-    QHeaderView::section {
-      background-color: #f0f0f0;
-      padding: 4px;
-      border: none;
-      border-bottom: 1px solid #d0d0d0;
-    }
-  )");
-  
+
   connect(image_table_, &QTableWidget::cellChanged, this, &DisplayConfigWidget::OnImageConfigChanged);
-  
-  QPushButton *add_btn = new QPushButton("添加图像", image_tab_);
-  add_btn->setFixedWidth(100);
-  add_btn->setStyleSheet(R"(
-    QPushButton {
-      border: 1px solid #4caf50;
-      border-radius: 4px;
-      padding: 6px;
-      background-color: #4caf50;
-      color: #ffffff;
-    }
-    QPushButton:hover {
-      background-color: #45a049;
-    }
-  )");
-  connect(add_btn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddImageConfig);
-  
-  tab_layout->addWidget(image_table_);
-  tab_layout->addWidget(add_btn, 0, Qt::AlignLeft);
-  
-  tab_widget_->addTab(image_tab_, "图像配置");
+  connect(ui_->addImageBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddImageConfig);
 }
 
 void DisplayConfigWidget::InitRobotShapeTab() {
-  robot_shape_tab_ = new QWidget();
-  QVBoxLayout *tab_layout = new QVBoxLayout(robot_shape_tab_);
-  tab_layout->setContentsMargins(10, 10, 10, 10);
-  tab_layout->setSpacing(10);
-  
-  QLabel *section_label = new QLabel("机器人外形配置", robot_shape_tab_);
-  section_label->setStyleSheet(R"(
-    QLabel {
-      font-size: 14px;
-      font-weight: bold;
-      color: #333333;
-      padding: 5px;
-    }
-  )");
-  tab_layout->addWidget(section_label);
-  
-  QGroupBox *points_group = new QGroupBox("外形点列表", robot_shape_tab_);
-  points_group->setStyleSheet(R"(
-    QGroupBox {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      margin-top: 10px;
-      padding-top: 10px;
-      background-color: #f9f9f9;
-    }
-    QGroupBox::title {
-      subcontrol-origin: margin;
-      left: 10px;
-      padding: 0 5px;
-    }
-  )");
-  
-  QVBoxLayout *points_layout = new QVBoxLayout(points_group);
-  points_layout->setContentsMargins(10, 15, 10, 10);
-  points_layout->setSpacing(8);
-  
-  robot_points_table_ = new QTableWidget(0, 2, points_group);
-  robot_points_table_->setHorizontalHeaderLabels(QStringList() << "X" << "Y");
+  robot_shape_tab_ = ui_->robotShapeTab;
+  robot_points_table_ = ui_->robotPointsTable;
   robot_points_table_->horizontalHeader()->setStretchLastSection(true);
-  robot_points_table_->setSelectionBehavior(QAbstractItemView::SelectRows);
-  robot_points_table_->setStyleSheet(R"(
-    QTableWidget {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      background-color: #ffffff;
-      gridline-color: #e0e0e0;
-    }
-    QTableWidget::item {
-      padding: 4px;
-    }
-    QHeaderView::section {
-      background-color: #f0f0f0;
-      padding: 4px;
-      border: none;
-      border-bottom: 1px solid #d0d0d0;
-    }
-  )");
-  
   connect(robot_points_table_, &QTableWidget::cellChanged, this, &DisplayConfigWidget::OnRobotShapePointChanged);
-  
-  QHBoxLayout *points_btn_layout = new QHBoxLayout();
-  QPushButton *add_point_btn = new QPushButton("添加点", points_group);
-  add_point_btn->setFixedWidth(80);
-  add_point_btn->setStyleSheet(R"(
-    QPushButton {
-      border: 1px solid #4caf50;
-      border-radius: 4px;
-      padding: 4px;
-      background-color: #4caf50;
-      color: #ffffff;
-    }
-    QPushButton:hover {
-      background-color: #45a049;
-    }
-  )");
-  connect(add_point_btn, &QPushButton::clicked, [this]() {
+
+  connect(ui_->addRobotPointBtn, &QPushButton::clicked, [this]() {
     int row = robot_points_table_->rowCount();
     robot_points_table_->insertRow(row);
     robot_points_table_->setItem(row, 0, new QTableWidgetItem("0.0"));
     robot_points_table_->setItem(row, 1, new QTableWidgetItem("0.0"));
     OnRobotShapePointChanged();
   });
-  
-  QPushButton *remove_point_btn = new QPushButton("删除点", points_group);
-  remove_point_btn->setFixedWidth(80);
-  remove_point_btn->setStyleSheet(R"(
-    QPushButton {
-      border: 1px solid #f44336;
-      border-radius: 4px;
-      padding: 4px;
-      background-color: #f44336;
-      color: #ffffff;
-    }
-    QPushButton:hover {
-      background-color: #da190b;
-    }
-  )");
-  connect(remove_point_btn, &QPushButton::clicked, [this]() {
+
+  connect(ui_->removeRobotPointBtn, &QPushButton::clicked, [this]() {
     int row = robot_points_table_->currentRow();
     if (row >= 0) {
       robot_points_table_->removeRow(row);
       OnRobotShapePointChanged();
     }
   });
-  
-  points_btn_layout->addWidget(add_point_btn);
-  points_btn_layout->addWidget(remove_point_btn);
-  points_btn_layout->addItem(new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Minimum));
-  
-  points_layout->addWidget(robot_points_table_);
-  points_layout->addLayout(points_btn_layout);
-  
-  QGroupBox *style_group = new QGroupBox("样式设置", robot_shape_tab_);
-  style_group->setStyleSheet(R"(
-    QGroupBox {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      margin-top: 10px;
-      padding-top: 10px;
-      background-color: #f9f9f9;
-    }
-    QGroupBox::title {
-      subcontrol-origin: margin;
-      left: 10px;
-      padding: 0 5px;
-    }
-  )");
-  
-  QVBoxLayout *style_layout = new QVBoxLayout(style_group);
-  style_layout->setContentsMargins(10, 15, 10, 10);
-  style_layout->setSpacing(10);
-  
-  robot_is_ellipse_checkbox_ = new QCheckBox("使用椭圆", style_group);
-  robot_is_ellipse_checkbox_->setStyleSheet(R"(
-    QCheckBox {
-      spacing: 5px;
-    }
-    QCheckBox::indicator {
-      width: 18px;
-      height: 18px;
-      border: 1px solid #d0d0d0;
-      border-radius: 3px;
-      background-color: #ffffff;
-    }
-    QCheckBox::indicator:checked {
-      background-color: #4caf50;
-      border-color: #4caf50;
-    }
-  )");
+
+  robot_is_ellipse_checkbox_ = ui_->robotIsEllipseCheckbox;
   connect(robot_is_ellipse_checkbox_, &QCheckBox::toggled, this, &DisplayConfigWidget::OnRobotShapeIsEllipseChanged);
-  
-  QHBoxLayout *color_layout = new QHBoxLayout();
-  QLabel *color_label = new QLabel("颜色:", style_group);
-  color_label->setFixedWidth(80);
-  robot_color_button_ = new QPushButton("选择颜色", style_group);
-  robot_color_button_->setFixedWidth(120);
-  robot_color_button_->setStyleSheet(R"(
-    QPushButton {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      padding: 4px;
-      background-color: #ffffff;
-    }
-    QPushButton:hover {
-      background-color: #f0f0f0;
-      border-color: #1976d2;
-    }
-  )");
+
+  robot_color_button_ = ui_->robotColorButton;
   connect(robot_color_button_, &QPushButton::clicked, this, &DisplayConfigWidget::OnRobotShapeColorChanged);
-  color_layout->addWidget(color_label);
-  color_layout->addWidget(robot_color_button_);
-  color_layout->addItem(new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Minimum));
-  
-  QHBoxLayout *opacity_layout = new QHBoxLayout();
-  QLabel *opacity_label = new QLabel("透明度:", style_group);
-  opacity_label->setFixedWidth(80);
-  robot_opacity_slider_ = new QSlider(Qt::Horizontal, style_group);
-  robot_opacity_slider_->setRange(0, 100);
-  robot_opacity_slider_->setValue(50);
-  robot_opacity_slider_->setStyleSheet(R"(
-    QSlider::groove:horizontal {
-      border: 1px solid #d0d0d0;
-      height: 6px;
-      background: #e0e0e0;
-      border-radius: 3px;
-    }
-    QSlider::handle:horizontal {
-      background: #1976d2;
-      border: 1px solid #1976d2;
-      width: 18px;
-      margin: -2px 0;
-      border-radius: 9px;
-    }
-    QSlider::handle:horizontal:hover {
-      background: #1565c0;
-    }
-  )");
-  robot_opacity_label_ = new QLabel("50%", style_group);
-  robot_opacity_label_->setFixedWidth(50);
+
+  robot_opacity_slider_ = ui_->robotOpacitySlider;
+  robot_opacity_label_ = ui_->robotOpacityLabel;
   connect(robot_opacity_slider_, &QSlider::valueChanged, [this](int value) {
     robot_opacity_label_->setText(QString::number(value) + "%");
     OnRobotShapeOpacityChanged(value);
   });
-  opacity_layout->addWidget(opacity_label);
-  opacity_layout->addWidget(robot_opacity_slider_);
-  opacity_layout->addWidget(robot_opacity_label_);
-  
-  style_layout->addWidget(robot_is_ellipse_checkbox_);
-  style_layout->addLayout(color_layout);
-  style_layout->addLayout(opacity_layout);
-  
-  tab_layout->addWidget(points_group);
-  tab_layout->addWidget(style_group);
-  tab_layout->addItem(new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
-  
-  tab_widget_->addTab(robot_shape_tab_, "机器人外形");
 }
 
 void DisplayConfigWidget::SetChannelList(const std::vector<std::string> &channel_list) {
@@ -662,69 +320,8 @@ std::string DisplayConfigWidget::ExtractChannelType(const std::string &channel_p
 }
 
 void DisplayConfigWidget::InitChannelConfigTab() {
-  channel_config_tab_ = new QWidget();
-  QVBoxLayout *tab_layout = new QVBoxLayout(channel_config_tab_);
-  tab_layout->setContentsMargins(10, 10, 10, 10);
-  tab_layout->setSpacing(10);
-  
-  QLabel *section_label = new QLabel("通信配置", channel_config_tab_);
-  section_label->setStyleSheet(R"(
-    QLabel {
-      font-size: 14px;
-      font-weight: bold;
-      color: #333333;
-      padding: 5px;
-    }
-  )");
-  tab_layout->addWidget(section_label);
-  
-  QGroupBox *channel_type_group = new QGroupBox("通道类型", channel_config_tab_);
-  channel_type_group->setStyleSheet(R"(
-    QGroupBox {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      margin-top: 10px;
-      padding-top: 10px;
-      background-color: #f9f9f9;
-    }
-    QGroupBox::title {
-      subcontrol-origin: margin;
-      left: 10px;
-      padding: 0 5px;
-    }
-  )");
-  
-  QVBoxLayout *channel_type_layout = new QVBoxLayout(channel_type_group);
-  channel_type_layout->setContentsMargins(10, 15, 10, 10);
-  channel_type_layout->setSpacing(8);
-  
-  QHBoxLayout *type_layout = new QHBoxLayout();
-  QLabel *type_label = new QLabel("类型:", channel_type_group);
-  type_label->setFixedWidth(80);
-  channel_type_combo_ = new QComboBox(channel_type_group);
-  channel_type_combo_->setStyleSheet(R"(
-    QComboBox {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      padding: 4px;
-      background-color: #ffffff;
-      min-width: 150px;
-    }
-    QComboBox:hover {
-      border-color: #1976d2;
-    }
-    QComboBox::drop-down {
-      border: none;
-      width: 20px;
-    }
-    QComboBox::down-arrow {
-      image: none;
-      border-left: 4px solid transparent;
-      border-right: 4px solid transparent;
-      border-top: 6px solid #333333;
-      margin-right: 5px;
-    }
-  )");
+  channel_config_tab_ = ui_->channelConfigTab;
+  channel_type_combo_ = ui_->channelTypeCombo;
 
   connect(channel_type_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
     // 如果正在加载配置，不显示提示
@@ -754,53 +351,7 @@ void DisplayConfigWidget::InitChannelConfigTab() {
     }
   });
 
-  type_layout->addWidget(type_label);
-  type_layout->addWidget(channel_type_combo_);
-  type_layout->addItem(new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Minimum));
-  channel_type_layout->addLayout(type_layout);
-  
-  tab_layout->addWidget(channel_type_group);
-  
-  QGroupBox *rosbridge_group = new QGroupBox("ROSBridge 配置", channel_config_tab_);
-  rosbridge_group->setStyleSheet(R"(
-    QGroupBox {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      margin-top: 10px;
-      padding-top: 10px;
-      background-color: #f9f9f9;
-    }
-    QGroupBox::title {
-      subcontrol-origin: margin;
-      left: 10px;
-      padding: 0 5px;
-    }
-  )");
-  
-  QVBoxLayout *rosbridge_layout = new QVBoxLayout(rosbridge_group);
-  rosbridge_layout->setContentsMargins(10, 15, 10, 10);
-  rosbridge_layout->setSpacing(8);
-  
-  QHBoxLayout *ip_layout = new QHBoxLayout();
-  QLabel *ip_label = new QLabel("IP地址:", rosbridge_group);
-  ip_label->setFixedWidth(80);
-  rosbridge_ip_edit_ = new QLineEdit(rosbridge_group);
-  rosbridge_ip_edit_->setPlaceholderText("127.0.0.1");
-  rosbridge_ip_edit_->setStyleSheet(R"(
-    QLineEdit {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      padding: 4px;
-      background-color: #ffffff;
-    }
-    QLineEdit:focus {
-      border-color: #1976d2;
-    }
-    QLineEdit:disabled {
-      background-color: #f5f5f5;
-      color: #999999;
-    }
-  )");
+  rosbridge_ip_edit_ = ui_->rosbridgeIpEdit;
   connect(rosbridge_ip_edit_, &QLineEdit::editingFinished, [this]() {
     // 如果正在加载配置，不显示提示
     if (is_loading_config_) {
@@ -823,30 +374,7 @@ void DisplayConfigWidget::InitChannelConfigTab() {
                                 QMessageBox::Ok);
     }
   });
-  ip_layout->addWidget(ip_label);
-  ip_layout->addWidget(rosbridge_ip_edit_);
-  rosbridge_layout->addLayout(ip_layout);
-  
-  QHBoxLayout *port_layout = new QHBoxLayout();
-  QLabel *port_label = new QLabel("端口:", rosbridge_group);
-  port_label->setFixedWidth(80);
-  rosbridge_port_edit_ = new QLineEdit(rosbridge_group);
-  rosbridge_port_edit_->setPlaceholderText("9090");
-  rosbridge_port_edit_->setStyleSheet(R"(
-    QLineEdit {
-      border: 1px solid #d0d0d0;
-      border-radius: 4px;
-      padding: 4px;
-      background-color: #ffffff;
-    }
-    QLineEdit:focus {
-      border-color: #1976d2;
-    }
-    QLineEdit:disabled {
-      background-color: #f5f5f5;
-      color: #999999;
-    }
-  )");
+  rosbridge_port_edit_ = ui_->rosbridgePortEdit;
   connect(rosbridge_port_edit_, &QLineEdit::editingFinished, [this]() {
     // 如果正在加载配置，不显示提示
     if (is_loading_config_) {
@@ -869,41 +397,13 @@ void DisplayConfigWidget::InitChannelConfigTab() {
                                 QMessageBox::Ok);
     }
   });
-  port_layout->addWidget(port_label);
-  port_layout->addWidget(rosbridge_port_edit_);
-  rosbridge_layout->addLayout(port_layout);
-  
-  tab_layout->addWidget(rosbridge_group);
-  
-  reconnect_channel_btn_ = new QPushButton("保存", channel_config_tab_);
-  reconnect_channel_btn_->setFixedWidth(150);
-  reconnect_channel_btn_->setStyleSheet(R"(
-    QPushButton {
-      border: 1px solid #1976d2;
-      border-radius: 4px;
-      padding: 6px;
-      background-color: #1976d2;
-      color: #ffffff;
-      font-weight: bold;
-    }
-    QPushButton:hover {
-      background-color: #1565c0;
-    }
-    QPushButton:pressed {
-      background-color: #0d47a1;
-    }
-  )");
+  reconnect_channel_btn_ = ui_->reconnectChannelBtn;
   connect(reconnect_channel_btn_, &QPushButton::clicked, [this]() {
     QMessageBox::information(this, "提示", 
                               "请重启应用程序以使通道配置生效。\n"
                               "当前配置已保存。",
                               QMessageBox::Ok);
   });
-  tab_layout->addWidget(reconnect_channel_btn_, 0, Qt::AlignLeft);
-  
-  tab_layout->addItem(new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
-  
-  tab_widget_->addTab(channel_config_tab_, "通信配置");
 }
 
 void DisplayConfigWidget::SetDisplayManager(Display::DisplayManager *manager) {

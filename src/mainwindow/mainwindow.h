@@ -32,6 +32,9 @@
 #include "widgets/nav_goal_table_view.h"
 #include "widgets/speed_ctrl.h"
 #include "widgets/ratio_layouted_frame.h"
+#include "widgets/map_toolbar_widget.h"
+#include "widgets/edit_toolbar_widget.h"
+#include "widgets/task_list_panel_widget.h"
 #include "core/framework/framework.h"
 
 QT_BEGIN_NAMESPACE
@@ -76,7 +79,7 @@ class MainWindow : public QMainWindow {
  // ── UI 初始化 ──────────────────────────────────────────────
  private:
   void setupUi();
-  std::pair<QVBoxLayout*, QHBoxLayout*> initGlobalStyle();
+  void initGlobalStyle();
   struct MapToolBarButtons;
   struct EditToolBarWidgets;
   MapToolBarButtons createMapToolBar(QVBoxLayout* center_layout);
@@ -106,13 +109,22 @@ class MainWindow : public QMainWindow {
 
   // 通信
   ChannelManager channel_manager_;
+  Framework::MessageBus::CallbackId odom_pose_sub_id_{0};
+  Framework::MessageBus::CallbackId robot_pose_sub_id_{0};
+  Framework::MessageBus::CallbackId battery_state_sub_id_{0};
+  Framework::MessageBus::CallbackId image_sub_id_{0};
 
   // 显示
-  Display::DisplayManager *display_manager_;
-  DashBoard *speed_dash_board_;
-  SpeedCtrlWidget *speed_ctrl_widget_;
-  NavGoalTableView *nav_goal_table_view_;
+  Display::DisplayManager *display_manager_{nullptr};
+  DashBoard *speed_dash_board_{nullptr};
+  SpeedCtrlWidget *speed_ctrl_widget_{nullptr};
+  NavGoalTableView *nav_goal_table_view_{nullptr};
   std::map<std::string, RatioLayoutedFrame *> image_frame_map_;
+
+  // 静态UI包装控件
+  MapToolBarWidget *map_toolbar_widget_{nullptr};
+  EditToolBarWidget *edit_toolbar_widget_{nullptr};
+  TaskListPanelWidget *task_list_panel_widget_{nullptr};
 
   // 状态栏控件
   QProgressBar *battery_bar_;

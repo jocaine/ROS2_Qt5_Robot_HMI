@@ -31,6 +31,7 @@
 #include "display/point_shape.h"
 #include "display/robot_shape.h"
 #include "widgets/set_pose_widget.h"
+#include "core/framework/message_bus.h"
 // group
 #define GROUP_MAP "Group_Map"
 namespace Display {
@@ -132,6 +133,10 @@ class DisplayManager : public QObject {
 
   // ── 核心数据 ────────────────────────────────────
   std::map<std::string, std::any> display_map_;   // 图层名 -> 图层实例
+  Framework::MessageBus::CallbackId topology_map_sub_id_{0};
+  Framework::MessageBus::CallbackId occupancy_map_sub_id_{0};
+  Framework::MessageBus::CallbackId robot_pose_sub_id_{0};
+  Framework::MessageBus::CallbackId laser_scan_sub_id_{0};
   RobotPose robot_pose_{0, 0, 0};
   RobotPose robot_pose_goal_{0, 0, 0};
   OccupancyMap map_data_;

@@ -1,0 +1,1077 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DisplayConfigWidget</class>
+ <widget class="QWidget" name="DisplayConfigWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>360</width>
+    <height>680</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <property name="leftMargin">
+    <number>10</number>
+   </property>
+   <property name="topMargin">
+    <number>10</number>
+   </property>
+   <property name="rightMargin">
+    <number>10</number>
+   </property>
+   <property name="bottomMargin">
+    <number>10</number>
+   </property>
+   <property name="spacing">
+    <number>8</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="titleLabel">
+     <property name="styleSheet">
+      <string notr="true">QLabel {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333333;
+  padding: 5px;
+}</string>
+     </property>
+     <property name="text">
+      <string>配置管理</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="styleSheet">
+      <string notr="true">QTabWidget::pane {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background-color: #ffffff;
+}
+QTabBar::tab {
+  background-color: #f0f0f0;
+  color: #333333;
+  padding: 8px 16px;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  margin-right: 2px;
+}
+QTabBar::tab:selected {
+  background-color: #ffffff;
+  color: #1976d2;
+  font-weight: bold;
+}
+QTabBar::tab:hover {
+  background-color: #e0e0e0;
+}</string>
+     </property>
+     <widget class="QWidget" name="displayTab">
+      <attribute name="title">
+       <string>图层配置</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="displayTabLayout">
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>10</number>
+       </property>
+       <property name="spacing">
+        <number>8</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="displaySectionLabel">
+         <property name="styleSheet">
+          <string notr="true">QLabel {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333333;
+  padding: 5px;
+}</string>
+         </property>
+         <property name="text">
+          <string>图层配置</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="displayScrollArea">
+         <property name="styleSheet">
+          <string notr="true">QScrollArea { border: none; background-color: transparent; }</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="displayScrollContent">
+          <layout class="QVBoxLayout" name="displayScrollLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="spacing">
+            <number>5</number>
+           </property>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="channelConfigTab">
+      <attribute name="title">
+       <string>通信配置</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="channelConfigLayout">
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>10</number>
+       </property>
+       <property name="spacing">
+        <number>10</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="channelSectionLabel">
+         <property name="styleSheet">
+          <string notr="true">QLabel {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333333;
+  padding: 5px;
+}</string>
+         </property>
+         <property name="text">
+          <string>通信配置</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="channelTypeGroup">
+         <property name="styleSheet">
+          <string notr="true">QGroupBox {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  margin-top: 10px;
+  padding-top: 10px;
+  background-color: #f9f9f9;
+}
+QGroupBox::title {
+  subcontrol-origin: margin;
+  left: 10px;
+  padding: 0 5px;
+}</string>
+         </property>
+         <property name="title">
+          <string>通道类型</string>
+         </property>
+         <layout class="QVBoxLayout" name="channelTypeLayout">
+          <property name="leftMargin">
+           <number>10</number>
+          </property>
+          <property name="topMargin">
+           <number>15</number>
+          </property>
+          <property name="rightMargin">
+           <number>10</number>
+          </property>
+          <property name="bottomMargin">
+           <number>10</number>
+          </property>
+          <property name="spacing">
+           <number>8</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="channelTypeRowLayout">
+            <item>
+             <widget class="QLabel" name="channelTypeLabel">
+              <property name="minimumSize">
+               <size>
+                <width>80</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>类型:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="channelTypeCombo">
+              <property name="styleSheet">
+               <string notr="true">QComboBox {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 4px;
+  background-color: #ffffff;
+  min-width: 150px;
+}
+QComboBox:hover {
+  border-color: #1976d2;
+}
+QComboBox::drop-down {
+  border: none;
+  width: 20px;
+}
+QComboBox::down-arrow {
+  image: none;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid #333333;
+  margin-right: 5px;
+}</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="channelTypeSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="rosbridgeGroup">
+         <property name="styleSheet">
+          <string notr="true">QGroupBox {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  margin-top: 10px;
+  padding-top: 10px;
+  background-color: #f9f9f9;
+}
+QGroupBox::title {
+  subcontrol-origin: margin;
+  left: 10px;
+  padding: 0 5px;
+}</string>
+         </property>
+         <property name="title">
+          <string>ROSBridge 配置</string>
+         </property>
+         <layout class="QVBoxLayout" name="rosbridgeLayout">
+          <property name="leftMargin">
+           <number>10</number>
+          </property>
+          <property name="topMargin">
+           <number>15</number>
+          </property>
+          <property name="rightMargin">
+           <number>10</number>
+          </property>
+          <property name="bottomMargin">
+           <number>10</number>
+          </property>
+          <property name="spacing">
+           <number>8</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="rosbridgeIpLayout">
+            <item>
+             <widget class="QLabel" name="rosbridgeIpLabel">
+              <property name="minimumSize">
+               <size>
+                <width>80</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>IP地址:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="rosbridgeIpEdit">
+              <property name="styleSheet">
+               <string notr="true">QLineEdit {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 4px;
+  background-color: #ffffff;
+}
+QLineEdit:focus {
+  border-color: #1976d2;
+}
+QLineEdit:disabled {
+  background-color: #f5f5f5;
+  color: #999999;
+}</string>
+              </property>
+              <property name="placeholderText">
+               <string>127.0.0.1</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="rosbridgePortLayout">
+            <item>
+             <widget class="QLabel" name="rosbridgePortLabel">
+              <property name="minimumSize">
+               <size>
+                <width>80</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>端口:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="rosbridgePortEdit">
+              <property name="styleSheet">
+               <string notr="true">QLineEdit {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 4px;
+  background-color: #ffffff;
+}
+QLineEdit:focus {
+  border-color: #1976d2;
+}
+QLineEdit:disabled {
+  background-color: #f5f5f5;
+  color: #999999;
+}</string>
+              </property>
+              <property name="placeholderText">
+               <string>9090</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="reconnectChannelBtn">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>150</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  padding: 6px;
+  background-color: #1976d2;
+  color: #ffffff;
+  font-weight: bold;
+}
+QPushButton:hover {
+  background-color: #1565c0;
+}
+QPushButton:pressed {
+  background-color: #0d47a1;
+}</string>
+         </property>
+         <property name="text">
+          <string>保存</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="channelConfigSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="keyValueTab">
+      <attribute name="title">
+       <string>键值配置</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="keyValueLayout">
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>10</number>
+       </property>
+       <property name="spacing">
+        <number>10</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="keyValueSectionLabel">
+         <property name="styleSheet">
+          <string notr="true">QLabel {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333333;
+  padding: 5px;
+}</string>
+         </property>
+         <property name="text">
+          <string>键值配置</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QScrollArea" name="keyValueScrollArea">
+         <property name="styleSheet">
+          <string notr="true">QScrollArea { border: none; background-color: transparent; }</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="keyValueScrollContent">
+          <layout class="QVBoxLayout" name="keyValueScrollLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="spacing">
+            <number>5</number>
+           </property>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="addKeyValueBtn">
+         <property name="minimumSize">
+          <size>
+           <width>120</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>120</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+  border: 1px solid #4caf50;
+  border-radius: 4px;
+  padding: 6px;
+  background-color: #4caf50;
+  color: #ffffff;
+}
+QPushButton:hover {
+  background-color: #45a049;
+}</string>
+         </property>
+         <property name="text">
+          <string>添加配置项</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="imageTab">
+      <attribute name="title">
+       <string>图像配置</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="imageLayout">
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>10</number>
+       </property>
+       <property name="spacing">
+        <number>10</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="imageSectionLabel">
+         <property name="styleSheet">
+          <string notr="true">QLabel {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333333;
+  padding: 5px;
+}</string>
+         </property>
+         <property name="text">
+          <string>图像配置</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="imageTable">
+         <property name="styleSheet">
+          <string notr="true">QTableWidget {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background-color: #ffffff;
+  gridline-color: #e0e0e0;
+}
+QTableWidget::item {
+  padding: 4px;
+}
+QHeaderView::section {
+  background-color: #f0f0f0;
+  padding: 4px;
+  border: none;
+  border-bottom: 1px solid #d0d0d0;
+}</string>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <column>
+          <property name="text">
+           <string>位置</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>话题</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>启用</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>操作</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="addImageBtn">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+  border: 1px solid #4caf50;
+  border-radius: 4px;
+  padding: 6px;
+  background-color: #4caf50;
+  color: #ffffff;
+}
+QPushButton:hover {
+  background-color: #45a049;
+}</string>
+         </property>
+         <property name="text">
+          <string>添加图像</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="robotShapeTab">
+      <attribute name="title">
+       <string>机器人外形</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="robotShapeLayout">
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>10</number>
+       </property>
+       <property name="spacing">
+        <number>10</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="robotShapeSectionLabel">
+         <property name="styleSheet">
+          <string notr="true">QLabel {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333333;
+  padding: 5px;
+}</string>
+         </property>
+         <property name="text">
+          <string>机器人外形配置</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="robotPointsGroup">
+         <property name="styleSheet">
+          <string notr="true">QGroupBox {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  margin-top: 10px;
+  padding-top: 10px;
+  background-color: #f9f9f9;
+}
+QGroupBox::title {
+  subcontrol-origin: margin;
+  left: 10px;
+  padding: 0 5px;
+}</string>
+         </property>
+         <property name="title">
+          <string>外形点列表</string>
+         </property>
+         <layout class="QVBoxLayout" name="robotPointsLayout">
+          <property name="leftMargin">
+           <number>10</number>
+          </property>
+          <property name="topMargin">
+           <number>15</number>
+          </property>
+          <property name="rightMargin">
+           <number>10</number>
+          </property>
+          <property name="bottomMargin">
+           <number>10</number>
+          </property>
+          <property name="spacing">
+           <number>8</number>
+          </property>
+          <item>
+           <widget class="QTableWidget" name="robotPointsTable">
+            <property name="styleSheet">
+             <string notr="true">QTableWidget {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background-color: #ffffff;
+  gridline-color: #e0e0e0;
+}
+QTableWidget::item {
+  padding: 4px;
+}
+QHeaderView::section {
+  background-color: #f0f0f0;
+  padding: 4px;
+  border: none;
+  border-bottom: 1px solid #d0d0d0;
+}</string>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <column>
+             <property name="text">
+              <string>X</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Y</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="robotPointButtonLayout">
+            <item>
+             <widget class="QPushButton" name="addRobotPointBtn">
+              <property name="minimumSize">
+               <size>
+                <width>80</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+  border: 1px solid #4caf50;
+  border-radius: 4px;
+  padding: 4px;
+  background-color: #4caf50;
+  color: #ffffff;
+}
+QPushButton:hover {
+  background-color: #45a049;
+}</string>
+              </property>
+              <property name="text">
+               <string>添加点</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="removeRobotPointBtn">
+              <property name="minimumSize">
+               <size>
+                <width>80</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  padding: 4px;
+  background-color: #f44336;
+  color: #ffffff;
+}
+QPushButton:hover {
+  background-color: #da190b;
+}</string>
+              </property>
+              <property name="text">
+               <string>删除点</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="robotPointButtonSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="robotStyleGroup">
+         <property name="styleSheet">
+          <string notr="true">QGroupBox {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  margin-top: 10px;
+  padding-top: 10px;
+  background-color: #f9f9f9;
+}
+QGroupBox::title {
+  subcontrol-origin: margin;
+  left: 10px;
+  padding: 0 5px;
+}</string>
+         </property>
+         <property name="title">
+          <string>样式设置</string>
+         </property>
+         <layout class="QVBoxLayout" name="robotStyleLayout">
+          <property name="leftMargin">
+           <number>10</number>
+          </property>
+          <property name="topMargin">
+           <number>15</number>
+          </property>
+          <property name="rightMargin">
+           <number>10</number>
+          </property>
+          <property name="bottomMargin">
+           <number>10</number>
+          </property>
+          <property name="spacing">
+           <number>10</number>
+          </property>
+          <item>
+           <widget class="QCheckBox" name="robotIsEllipseCheckbox">
+            <property name="styleSheet">
+             <string notr="true">QCheckBox {
+  spacing: 5px;
+}
+QCheckBox::indicator {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  background-color: #ffffff;
+}
+QCheckBox::indicator:checked {
+  background-color: #4caf50;
+  border-color: #4caf50;
+}</string>
+            </property>
+            <property name="text">
+             <string>使用椭圆</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="robotColorLayout">
+            <item>
+             <widget class="QLabel" name="robotColorLabel">
+              <property name="minimumSize">
+               <size>
+                <width>80</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>颜色:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="robotColorButton">
+              <property name="minimumSize">
+               <size>
+                <width>120</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>120</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 4px;
+  background-color: #ffffff;
+}
+QPushButton:hover {
+  background-color: #f0f0f0;
+  border-color: #1976d2;
+}</string>
+              </property>
+              <property name="text">
+               <string>选择颜色</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="robotColorSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="robotOpacityLayout">
+            <item>
+             <widget class="QLabel" name="robotOpacityTextLabel">
+              <property name="minimumSize">
+               <size>
+                <width>80</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>透明度:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSlider" name="robotOpacitySlider">
+              <property name="styleSheet">
+               <string notr="true">QSlider::groove:horizontal {
+  border: 1px solid #d0d0d0;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+}
+QSlider::handle:horizontal {
+  background: #1976d2;
+  border: 1px solid #1976d2;
+  width: 18px;
+  margin: -2px 0;
+  border-radius: 9px;
+}
+QSlider::handle:horizontal:hover {
+  background: #1565c0;
+}</string>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="minimum">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <number>100</number>
+              </property>
+              <property name="value">
+               <number>50</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="robotOpacityLabel">
+              <property name="minimumSize">
+               <size>
+                <width>50</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>50</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>50%</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="robotShapeSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../resource/images.qrc"/>
+ </resources>
+ <connections/>
+</ui>

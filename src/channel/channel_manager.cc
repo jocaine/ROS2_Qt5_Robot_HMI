@@ -130,6 +130,9 @@ bool ChannelManager::OpenChannel(const std::string &path) {
   return true;
 }
 void ChannelManager::CloseChannel() {
+  if (channel_ptr_ == nullptr) {
+    return;
+  }
   channel_ptr_->ShutDown();
   delete channel_ptr_;
   channel_ptr_ = nullptr;

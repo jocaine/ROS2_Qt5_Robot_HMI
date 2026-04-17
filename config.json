@@ -1,0 +1,101 @@
+{
+  "channel_config": {
+    "channel_type": "auto",
+    "rosbridge_config": {
+      "ip": "127.0.0.1",
+      "port": "9090"
+    }
+  },
+  "display_config": [
+    {
+      "display_name": "GoalPose",
+      "topic": "/goal_pose",
+      "visible": true
+    },
+    {
+      "display_name": "kSetRelocPose",
+      "topic": "/initialpose",
+      "visible": true
+    },
+    {
+      "display_name": "kSetRobotSpeed",
+      "topic": "/cmd_vel",
+      "visible": true
+    },
+    {
+      "display_name": "kOccupancyMap",
+      "topic": "/map",
+      "visible": true
+    },
+    {
+      "display_name": "kLocalCostMap",
+      "topic": "/local_costmap/costmap",
+      "visible": true
+    },
+    {
+      "display_name": "kGlobalCostMap",
+      "topic": "/global_costmap/costmap",
+      "visible": true
+    },
+    {
+      "display_name": "kTopologyMap",
+      "topic": "/map/topology",
+      "visible": true
+    },
+    {
+      "display_name": "kTopologyMapUpdate",
+      "topic": "/map/topology/update",
+      "visible": true
+    },
+    {
+      "display_name": "kLaserScan",
+      "topic": "/scan",
+      "visible": true
+    },
+    {
+      "display_name": "kRobotPose",
+      "topic": "/odom",
+      "visible": true
+    },
+    {
+      "display_name": "kBatteryState",
+      "topic": "/battery",
+      "visible": true
+    },
+    {
+      "display_name": "kRobotFootprint",
+      "topic": "/local_costmap/published_footprint",
+      "visible": true
+    },
+    {
+      "display_name": "kGlobalPath",
+      "topic": "/plan",
+      "visible": true
+    },
+    {
+      "display_name": "kLocalPath",
+      "topic": "/local_plan",
+      "visible": true
+    }
+  ],
+  "images": [
+    {
+      "enable": true,
+      "location": "front",
+      "topic": "/camera/front/image_raw"
+    }
+  ],
+  "key_value": {
+    "BaseFrameId": "base_link"
+  },
+  "map_config": {
+    "path": ""
+  },
+  "nodeGroup_config": [],
+  "robot_shape_config": {
+    "color": "0x00000FF",
+    "is_ellipse": false,
+    "opacity": 0.5,
+    "shaped_points": []
+  }
+}

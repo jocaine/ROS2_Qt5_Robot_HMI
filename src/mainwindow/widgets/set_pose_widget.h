@@ -1,29 +1,27 @@
 #pragma once
-#include <QCalendarWidget>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QDoubleSpinBox>
-#include <QFileDialog>
-#include <QFileSystemModel>
-#include <QGraphicsItem>
-#include <QHBoxLayout>
-#include <QtWidgets/QListWidget>
+
+#include <memory>
+
 #include "algorithm.h"
 #include "point_type.h"
-#include "widgets/joystick.h"
+#include "widgets/floating_panel_widget.h"
+
+namespace Ui {
+class SetPoseWidget;
+}
+
 using namespace basic;
-class SetPoseWidget : public QWidget {
+
+class SetPoseWidget : public FloatingPanelWidget {
   Q_OBJECT
- protected:
-  void paintEvent(QPaintEvent *event) override;
 
  private:
-  QDoubleSpinBox *spinBox_x_;
-  QDoubleSpinBox *spinBox_y_;
-  QDoubleSpinBox *spinBox_theta_;
+  std::unique_ptr<Ui::SetPoseWidget> ui_;
+
  signals:
   void SignalPoseChanged(const RobotPose &pose);
   void SignalHandleOver(const bool &is_submit, const RobotPose &pose);
+
  public slots:
   void SetPose(const RobotPose &pose);
 
@@ -31,6 +29,6 @@ class SetPoseWidget : public QWidget {
   void SlotUpdateValue(double);
 
  public:
-  SetPoseWidget(QWidget *parent = 0);
-  ~SetPoseWidget() {}
+  explicit SetPoseWidget(QWidget *parent = 0);
+  ~SetPoseWidget() override;
 };

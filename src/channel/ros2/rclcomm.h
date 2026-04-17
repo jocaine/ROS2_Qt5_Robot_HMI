@@ -12,6 +12,7 @@
 #include "sensor_msgs/msg/image.hpp"
 
 #include <cv_bridge/cv_bridge.h>
+#include <memory>
 #include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -103,7 +104,7 @@ class rclcomm : public VirtualChannelNode {
 
   // ---- 节点与执行器 ----
   std::shared_ptr<rclcpp::Node> node;
-  rclcpp::executors::MultiThreadedExecutor *m_executor;
+  std::unique_ptr<rclcpp::executors::MultiThreadedExecutor> m_executor;
   rclcpp::CallbackGroup::SharedPtr callback_group_laser;
   rclcpp::CallbackGroup::SharedPtr callback_group_other;
 
@@ -111,6 +112,10 @@ class rclcomm : public VirtualChannelNode {
   basic::OccupancyMap occ_map_;                // 缓存的全局地图，局部代价地图叠加时用
   basic::RobotPose m_currPose;
   std::atomic_bool init_flag_{false};
+  Framework::MessageBus::CallbackId nav_goal_sub_id_{0};
+  Framework::MessageBus::CallbackId reloc_pose_sub_id_{0};
+  Framework::MessageBus::CallbackId robot_speed_sub_id_{0};
+  Framework::MessageBus::CallbackId topology_update_sub_id_{0};
   int node_check_counter_ = 0;
   mutable std::mutex health_mutex_;
   std::map<std::string, std::chrono::steady_clock::time_point> topic_last_received_;
