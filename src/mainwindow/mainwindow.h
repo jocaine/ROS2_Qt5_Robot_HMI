@@ -35,6 +35,7 @@
 #include "widgets/map_toolbar_widget.h"
 #include "widgets/edit_toolbar_widget.h"
 #include "widgets/task_list_panel_widget.h"
+#include "widgets/node_health_widget.h"
 #include "core/framework/framework.h"
 
 QT_BEGIN_NAMESPACE
@@ -114,6 +115,7 @@ class MainWindow : public QMainWindow {
   Framework::MessageBus::CallbackId robot_pose_sub_id_{0};
   Framework::MessageBus::CallbackId battery_state_sub_id_{0};
   Framework::MessageBus::CallbackId image_sub_id_{0};
+  Framework::MessageBus::CallbackId node_health_sub_id_{0};
 
   // 显示
   Display::DisplayManager *display_manager_{nullptr};
@@ -126,6 +128,7 @@ class MainWindow : public QMainWindow {
   MapToolBarWidget *map_toolbar_widget_{nullptr};
   EditToolBarWidget *edit_toolbar_widget_{nullptr};
   TaskListPanelWidget *task_list_panel_widget_{nullptr};
+  NodeHealthWidget *node_health_widget_{nullptr};
 
   // 状态栏控件
   QProgressBar *battery_bar_{nullptr};

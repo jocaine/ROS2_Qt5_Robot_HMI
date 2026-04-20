@@ -223,10 +223,12 @@ void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* cente
   center_layout->setSpacing(5);
 
   // ── 中心主窗体（Dock 容器）────────────────────────────────
-  delete ui->centralwidget;
+  // setLayout first to reparent center_layout away from centralwidget,
+  // then delete centralwidget so it no longer owns the layout.
   QWidget *center_widget = new QWidget();
   center_widget->setObjectName("centralWidgetHost");
   center_widget->setLayout(center_layout);
+  delete ui->centralwidget;
   CDockWidget *CentralDockWidget = new CDockWidget("CentralWidget");
   CentralDockWidget->setWidget(center_widget);
   center_docker_area_ = dock_manager_->setCentralWidget(CentralDockWidget);
@@ -365,6 +367,17 @@ void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* cente
     dock_widget->toggleView(false);
     ui->menuView->addAction(dock_widget->toggleViewAction());
   }
+
+  // ── 节点健康状态面板 ──────────────────────────────────────
+  node_health_widget_ = new NodeHealthWidget();
+  ads::CDockWidget *node_health_dock = new ads::CDockWidget("NodeHealth");
+  node_health_dock->setWidget(node_health_widget_);
+  node_health_dock->setMinimumSizeHintMode(CDockWidget::MinimumSizeHintFromDockWidget);
+  node_health_dock->setMinimumSize(260, 200);
+  dock_manager_->addDockWidget(ads::DockWidgetArea::BottomDockWidgetArea,
+                               node_health_dock, center_docker_area_);
+  node_health_dock->toggleView(false);
+  ui->menuView->addAction(node_health_dock->toggleViewAction());
 
 }
 
@@ -621,6 +634,9 @@ void MainWindow::registerChannel() {
   if (image_sub_id_ != 0) {
     UNSUBSCRIBE(MSG_ID_IMAGE, image_sub_id_);
   }
+  if (node_health_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_NODE_HEALTH, node_health_sub_id_);
+  }
 
   odom_pose_sub_id_ = SUBSCRIBE(MSG_ID_ODOM_POSE, [this](const RobotState& data) {
     if (!speed_dash_board_) return;
@@ -639,6 +655,13 @@ void MainWindow::registerChannel() {
 
   image_sub_id_ = SUBSCRIBE(MSG_ID_IMAGE, [this](const std::pair<std::string, std::shared_ptr<cv::Mat>>& location_to_mat) {
       this->SlotRecvImage(location_to_mat.first, location_to_mat.second);
+  });
+
+  node_health_sub_id_ = SUBSCRIBE(MSG_ID_NODE_HEALTH, [this](const SystemHealthStatus& status) {
+    if (!node_health_widget_) return;
+    QMetaObject::invokeMethod(this, [this, status]() {
+      node_health_widget_->update(status);
+    }, Qt::QueuedConnection);
   });
 }
 
