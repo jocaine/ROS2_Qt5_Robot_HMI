@@ -125,6 +125,9 @@ bool ChannelManager::OpenChannel(const std::string &path) {
   } catch (const boost::system::system_error &e) {
     std::cerr << "Failed to load dynamic library: " << e.what() << std::endl;
     return false;
+  } catch (const std::exception &e) {
+    std::cerr << "Failed to open channel: " << e.what() << std::endl;
+    return false;
   }
 
   return true;

@@ -216,15 +216,17 @@ void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* cente
   // ── 中心地图显示区域 ──────────────────────────────────────
   display_manager_ = new Display::DisplayManager();
   center_h_layout->addWidget(display_manager_->GetViewPtr());
+  center_layout->addLayout(center_h_layout);
 
-  
   // 减小下方边距
   center_layout->setContentsMargins(0, 0, 0, 5);
   center_layout->setSpacing(5);
 
   // ── 中心主窗体（Dock 容器）────────────────────────────────
-  QWidget *center_widget = ui->centralwidget;
+  delete ui->centralwidget;
+  QWidget *center_widget = new QWidget();
   center_widget->setObjectName("centralWidgetHost");
+  center_widget->setLayout(center_layout);
   CDockWidget *CentralDockWidget = new CDockWidget("CentralWidget");
   CentralDockWidget->setWidget(center_widget);
   center_docker_area_ = dock_manager_->setCentralWidget(CentralDockWidget);
@@ -621,21 +623,16 @@ void MainWindow::registerChannel() {
   }
 
   odom_pose_sub_id_ = SUBSCRIBE(MSG_ID_ODOM_POSE, [this](const RobotState& data) {
+    if (!speed_dash_board_) return;
     updateOdomInfo(data);
   });
 
-  robot_pose_sub_id_ = SUBSCRIBE(MSG_ID_ROBOT_POSE, [this](const RobotPose& robot_pose) {
-      if (!nav_goal_table_view_ || !display_manager_) return;
-      nav_goal_table_view_->UpdateRobotPose(robot_pose);
-      Display::ViewManager* view_manager = dynamic_cast<Display::ViewManager*>(display_manager_->GetViewPtr());
-      if (view_manager) {
-        view_manager->UpdateRobotPos("Robot: (" + QString::number(robot_pose.x, 'f', 2) + ", " +
-                                     QString::number(robot_pose.y, 'f', 2) + ", " +
-                                     QString::number(robot_pose.theta, 'f', 2) + ")");
-      }
+  robot_pose_sub_id_ = SUBSCRIBE(MSG_ID_ROBOT_POSE, [this](const RobotPose& p) {
+      OnRobotPoseUpdate(p);
   });
 
   battery_state_sub_id_ = SUBSCRIBE(MSG_ID_BATTERY_STATE, [this](const std::map<std::string, std::string>& map) {
+    if (!battery_bar_ || !label_power_) return;
     this->SlotSetBatteryStatus(std::stod(map.at("percent")),
                                std::stod(map.at("voltage")));
   });
@@ -803,8 +800,20 @@ void MainWindow::closeEvent(QCloseEvent *event) {
   disconnect(this, SIGNAL(OnRecvChannelData(const MsgId &, const std::any &)),
              this, SLOT(RecvChannelMsg(const MsgId &, const std::any &)));
   closeChannel();
+  display_manager_ = nullptr;
   SaveState();
   dock_manager_->deleteLater();
   QMainWindow::closeEvent(event);
   LOG_INFO("ros qt5 gui app close!");
+}
+
+void MainWindow::OnRobotPoseUpdate(const RobotPose& robot_pose) {
+  if (!nav_goal_table_view_ || !display_manager_) return;
+  nav_goal_table_view_->UpdateRobotPose(robot_pose);
+  Display::ViewManager* view_manager = dynamic_cast<Display::ViewManager*>(display_manager_->GetViewPtr());
+  if (view_manager) {
+    view_manager->UpdateRobotPos("Robot: (" + QString::number(robot_pose.x, 'f', 2) + ", " +
+                                 QString::number(robot_pose.y, 'f', 2) + ", " +
+                                 QString::number(robot_pose.theta, 'f', 2) + ")");
+  }
 }

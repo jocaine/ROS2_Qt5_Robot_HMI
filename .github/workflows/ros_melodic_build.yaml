@@ -1,14 +1,10 @@
 name: ROS1:Melodic(18.04)
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
-  pull_request:
-    branches:
-      - master
 
 jobs:
   build:

@@ -9,29 +9,42 @@
 #include <QLabel>
 #include <QMovie>
 #include <QPixmap>
+#include <QSocketNotifier>
 #include <QSplashScreen>
 #include <QThread>
 #include <csignal>
 #include <iostream>
+#include <cerrno>
+#include <cstring>
+#include <unistd.h>
 #include "logger/logger.h"
 #include "runtime/application_manager.h"
 
-static QApplication* g_app = nullptr;
+static int g_sig_pipe[2] = {-1, -1};
 
-void signalHandler(int signal) {
-  if (signal == SIGINT || signal == SIGTERM) {
-    if (g_app) {
-      g_app->exit(0);
-  }
-}
+void signalHandler(int) {
+  char byte = 1;
+  (void)write(g_sig_pipe[1], &byte, 1);
 }
 
 int main(int argc, char *argv[]) {
   QApplication a(argc, argv);
-  g_app = &a;
-  
+
+  if (pipe(g_sig_pipe) != 0) {
+    std::cerr << "Failed to create signal pipe: " << strerror(errno) << std::endl;
+    return 1;
+  }
   std::signal(SIGINT, signalHandler);
   std::signal(SIGTERM, signalHandler);
+
+  QSocketNotifier notifier(g_sig_pipe[0], QSocketNotifier::Read);
+  QObject::connect(&notifier, &QSocketNotifier::activated, [&]() {
+    char byte;
+    (void)read(g_sig_pipe[0], &byte, 1);
+    close(g_sig_pipe[0]);
+    close(g_sig_pipe[1]);
+    a.quit();
+  });
 
   ApplicationManager manager_;
   LOG_INFO("ros_qt5_gui_app init!")

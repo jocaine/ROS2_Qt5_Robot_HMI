@@ -98,14 +98,15 @@ class MainWindow : public QMainWindow {
  private:
   void SaveState();
   bool LoadMap(const std::string& file_path);
+  void OnRobotPoseUpdate(const RobotPose& robot_pose);
 
  // ── 成员变量 ───────────────────────────────────────────────
  private:
   Ui::MainWindow *ui;
 
   // Dock 框架
-  ads::CDockManager *dock_manager_;
-  ads::CDockAreaWidget *center_docker_area_;
+  ads::CDockManager *dock_manager_{nullptr};
+  ads::CDockAreaWidget *center_docker_area_{nullptr};
 
   // 通信
   ChannelManager channel_manager_;
@@ -127,8 +128,8 @@ class MainWindow : public QMainWindow {
   TaskListPanelWidget *task_list_panel_widget_{nullptr};
 
   // 状态栏控件
-  QProgressBar *battery_bar_;
-  QLabel *label_power_;
+  QProgressBar *battery_bar_{nullptr};
+  QLabel *label_power_{nullptr};
 
   // 地图
   std::string map_path_{"./map"};
