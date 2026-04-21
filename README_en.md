@@ -1,9 +1,9 @@
 <!--
- * @Author: chengyangkj chengyangkj@qq.com
+ * @Author: jocaine 2508087548@qq.com
  * @Date: 2023-09-02 07:23:43
- * @LastEditors: chengyangkj chengyangkj@qq.com
- * @LastEditTime: 2024-01-15
- * @FilePath: /Ros_Qt5_Gui_App/README_en.md
+ * @LastEditors: jocaine 2508087548@qq.com
+ * @LastEditTime: 2026-04-21
+ * @FilePath: /ROS2_Qt5_Robot_HMI/README_en.md
 -->
 <div align="center">
 
@@ -13,18 +13,17 @@
 
 [简体中文](./README.md) | [English](./README_en.md)
 
-[![GitHub last commit](https://img.shields.io/github/last-commit/chengyangkj/Ros_Qt5_Gui_App?style=flat-square)](https://github.com/chengyangkj/Ros_Qt5_Gui_App/commits/master)
-[![GitHub stars](https://img.shields.io/github/stars/chengyangkj/Ros_Qt5_Gui_App?style=flat-square)](https://github.com/chengyangkj/Ros_Qt5_Gui_App/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/chengyangkj/Ros_Qt5_Gui_App?style=flat-square)](https://github.com/chengyangkj/Ros_Qt5_Gui_App/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/chengyangkj/Ros_Qt5_Gui_App?style=flat-square)](https://github.com/chengyangkj/Ros_Qt5_Gui_App/issues)
-[![QQ Group](https://img.shields.io/badge/QQ%20Group-797497206-purple)](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=mvzoO6tJQtu0ZQYa_itHW7JrT0i4OCdK&authKey=exOT53pUpRG85mwuSMstWKbLlnrme%2FEuJE0Rt%2Fw6ONNvfHqftoWMay03mk1Qi7yv&noverify=0&group_code=797497206)
+[![GitHub last commit](https://img.shields.io/github/last-commit/jocaine/ROS2_Qt5_Robot_HMI?style=flat-square)](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/commits/master)
+[![GitHub stars](https://img.shields.io/github/stars/jocaine/ROS2_Qt5_Robot_HMI?style=flat-square)](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/jocaine/ROS2_Qt5_Robot_HMI?style=flat-square)](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/jocaine/ROS2_Qt5_Robot_HMI?style=flat-square)](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/issues)
 
-![humble](https://github.com/chengyangkj/Ros_Qt5_Gui_App/actions/workflows/ros_humble_build.yaml/badge.svg)
-![foxy](https://github.com/chengyangkj/Ros_Qt5_Gui_App/actions/workflows/ros_foxy_build.yaml/badge.svg)
-![noetic](https://github.com/chengyangkj/Ros_Qt5_Gui_App/actions/workflows/ros_noetic_build.yaml/badge.svg)
-![galactic](https://github.com/chengyangkj/Ros_Qt5_Gui_App/actions/workflows/ros_galactic_build.yaml/badge.svg)
-![melodic](https://github.com/chengyangkj/Ros_Qt5_Gui_App/actions/workflows/ros_melodic_build.yaml/badge.svg)
-![windows](https://github.com/chengyangkj/Ros_Qt5_Gui_App/actions/workflows/windows_build.yaml/badge.svg)
+![humble](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/actions/workflows/ros_humble_build.yaml/badge.svg)
+![foxy](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/actions/workflows/ros_foxy_build.yaml/badge.svg)
+![noetic](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/actions/workflows/ros_noetic_build.yaml/badge.svg)
+![galactic](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/actions/workflows/ros_galactic_build.yaml/badge.svg)
+![melodic](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/actions/workflows/ros_melodic_build.yaml/badge.svg)
+![windows](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/actions/workflows/windows_build.yaml/badge.svg)
 
 </div>
 
@@ -54,6 +53,7 @@ All features are self-implemented through custom drawing, making it easy to run 
 - Camera Image Display - Supports multiple image streams
 - Robot Footprint Display - Subscribes to footprint topic
 - LiDAR Display - Supports LaserScan visualization
+- Node Health Monitoring - Monitors ROS2 node liveness and topic data flow grouped by subsystem, with real-time system health indicator in toolbar (Normal / Degraded / Fault)
 
 ### 🖼️ Interface Preview
 
@@ -107,8 +107,8 @@ sudo ./cmake-install.sh --prefix=/usr/local --skip-license
 
 ```bash
 # Clone repository
-git clone https://github.com/chengyangkj/Ros_Qt5_Gui_App.git
-cd Ros_Qt5_Gui_App
+git clone https://github.com/jocaine/ROS2_Qt5_Robot_HMI.git
+cd ROS2_Qt5_Robot_HMI
 ```
 
 #### Method 1: Manual CMake Build
@@ -216,8 +216,8 @@ vcpkg install --triplet x64-windows
 
 ```powershell
 # Clone repository
-git clone https://github.com/chengyangkj/Ros_Qt5_Gui_App.git
-cd Ros_Qt5_Gui_App
+git clone https://github.com/jocaine/ROS2_Qt5_Robot_HMI.git
+cd ROS2_Qt5_Robot_HMI
 ```
 
 #### Method 1: Manual CMake Build
@@ -300,7 +300,7 @@ cd ..\install\bin
 
 ## 📥 Release Binary Distribution
 
-Download the binary package for your system version from the [release](https://github.com/chengyangkj/Ros_Qt5_Gui_App/releases) page:
+Download the binary package for your system version from the [release](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/releases) page:
 
 - **Linux**: Download `.tar.gz` package, extract and refer to [Linux Method 3: Run After Installation](#method-3-run-after-installation) to run the program
 - **Windows**: Download `.zip` package, extract and refer to [Windows Method 3: Run After Installation](#method-3-run-after-installation-windows) to run the program
@@ -342,9 +342,9 @@ Ros_Qt5_Gui_App/
 
 ## 🤝 Contributing
 
-Welcome to submit [Issues](https://github.com/chengyangkj/Ros_Qt5_Gui_App/issues) and [Pull Requests](https://github.com/chengyangkj/Ros_Qt5_Gui_App/pulls)!
+Welcome to submit [Issues](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/issues) and [Pull Requests](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/pulls)!
 
-If you have any ideas or suggestions, feel free to submit them to [🌟 Wishlist/Requirements](https://github.com/chengyangkj/Ros_Qt5_Gui_App/issues/29). They might be implemented someday!
+If you have any ideas or suggestions, feel free to submit them to [Issues](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/issues)!
 
 ### Contributing Guide
 
@@ -358,47 +358,25 @@ If you have any ideas or suggestions, feel free to submit them to [🌟 Wishlist
 
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=chengyangkj/Ros_Qt5_Gui_App&type=Timeline&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=chengyangkj/Ros_Qt5_Gui_App&type=Timeline" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=chengyangkj/Ros_Qt5_Gui_App&type=Timeline" width="75%" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=jocaine/ROS2_Qt5_Robot_HMI&type=Timeline&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=jocaine/ROS2_Qt5_Robot_HMI&type=Timeline" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=jocaine/ROS2_Qt5_Robot_HMI&type=Timeline" width="75%" />
   </picture>
 </div>
 
 ## 📱 Related Projects
 
-### ROS1/ROS2 Cross-platform Mobile Robot HMI Software Based on Flutter
+This project is forked from [chengyangkj/Ros_Qt5_Gui_App](https://github.com/chengyangkj/Ros_Qt5_Gui_App), with continued iteration focused on ROS2 and HMI productization.
 
-![Flutter Version](./doc/images/flutter.png)
+## 🔗 Upstream Repository
 
-For details, visit [ROS_Flutter_Gui_App](https://github.com/chengyangkj/ROS_Flutter_Gui_App)
+| Repository | Description |
+|------------|-------------|
+| [chengyangkj/Ros_Qt5_Gui_App](https://github.com/chengyangkj/Ros_Qt5_Gui_App) | Original upstream, supports ROS1/ROS2/ROSBridge |
 
-### ROS1/ROS2 Web GUI Application Based on React
+## 💬 Contact
 
-![React Version](https://raw.githubusercontent.com/chengyangkj/ros_web_gui_app/main/doc/images/2d.png)
-
-Supports map editing
-
-![React Version](https://raw.githubusercontent.com/chengyangkj/ros_web_gui_app/main/doc/images/map_edit.png)
-
-For details, visit [ROS_Web_Gui_App](https://github.com/chengyangkj/ros_web_gui_app)
-
-## 🔗 Related Links
-
-| Branch | Supported Platforms | Description |
-|--------|-------------------|-------------|
-| [master](https://github.com/chengyangkj/Ros_Qt5_Gui_App/tree/master) | Win10 Ubuntu | ROS + QWidget + QGraphicsView custom visualization interface display |
-| [qml_hmi](https://github.com/chengyangkj/Ros_Qt5_Gui_App/tree/qml_hmi) | Win10 Ubuntu | ROS + QML + C++ hybrid programming, QML self-drawn map, lidar and other visualization demos |
-| [simple](https://github.com/chengyangkj/Ros_Qt5_Gui_App/tree/simple) | Win10 Ubuntu | ROS + QWidget + Librviz visualization display, CSDN blog "ROS Human-Machine Interaction Software Development" course implementation version |
-| [rviz_tree](https://github.com/chengyangkj/Ros_Qt5_Gui_App/tree/rviz_tree) | Win10 Ubuntu | ROS + QWidget + Librviz native layer API management, no need to manually create layers |
-| [ros_qt_demo](https://github.com/chengyangkj/ros_qt_demo) | Win10 Ubuntu | Original package created using catkin_create_qt_pkg, CMakeLists.txt configured for Qt5, can be directly compiled and run |
-| [ros2_qt_demo](https://github.com/chengyangkj/ros2_qt_demo) | ROS2 | Qt demo package running on ROS2 platform, CMakeLists.txt configured for Qt5, can be built using colcon build |
-| [ROS2_Qt5_Gui_App](https://github.com/chengyangkj/ROS2_Qt5_Gui_App) | ROS2 | Same as this repository/no longer maintained |
-| [Flutter App](https://github.com/chengyangkj/ROS_Flutter_Gui_App) | Multi-platform (Flutter) | Implemented |
-
-## 💬 Discussion Group
-
-- **QQ Group**: 797497206
-- **Issues**: [GitHub Issues](https://github.com/chengyangkj/Ros_Qt5_Gui_App/issues)
+- **Issues**: [GitHub Issues](https://github.com/jocaine/ROS2_Qt5_Robot_HMI/issues)
 
 ## 📄 License
 
