@@ -14,6 +14,9 @@
 #include <cv_bridge/cv_bridge.h>
 #include <memory>
 #include <mutex>
+#include <thread>
+#include <atomic>
+#include <chrono>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include "algorithm.h"
@@ -116,9 +119,12 @@ class rclcomm : public VirtualChannelNode {
   Framework::MessageBus::CallbackId reloc_pose_sub_id_{0};
   Framework::MessageBus::CallbackId robot_speed_sub_id_{0};
   Framework::MessageBus::CallbackId topology_update_sub_id_{0};
-  int node_check_counter_ = 0;
   mutable std::mutex health_mutex_;
   std::map<std::string, std::chrono::steady_clock::time_point> topic_last_received_;
+
+  // ---- 健康检测独立线程 ----
+  std::thread health_check_thread_;
+  std::atomic_bool health_check_running_{false};
 };
 
 #endif  // RCLCOMM_H

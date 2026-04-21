@@ -220,6 +220,16 @@ bool rclcomm::Start() {
   });
   
   init_flag_ = true;
+
+  // 健康检测独立线程，与主循环解耦
+  health_check_running_ = true;
+  health_check_thread_ = std::thread([this]() {
+    while (health_check_running_) {
+      checkNodeHealth();
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+  });
+
   return true;
 }
 
@@ -244,6 +254,12 @@ bool rclcomm::Stop() {
   }
 
   init_flag_ = false;
+
+  // 先停健康检测线程，再关 ROS 节点
+  health_check_running_ = false;
+  if (health_check_thread_.joinable()) {
+    health_check_thread_.join();
+  }
 
   if (m_executor) {
     m_executor->cancel();
@@ -289,11 +305,6 @@ void rclcomm::Process() {
   if (rclcpp::ok()) {
     m_executor->spin_some();
     getRobotPose();
-
-    if (++node_check_counter_ >= 60) {  // 每 2 秒
-    node_check_counter_ = 0;
-    checkNodeHealth();
-    }
   }
 }
 
@@ -820,7 +831,7 @@ void rclcomm::checkNodeHealth() {
             if (it != snapshot.end()) {
                 auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second);
                 ts.last_received_seconds_ago = elapsed.count();
-                ts.timeout = (elapsed.count() > 5);  // 5 秒阈值
+                ts.timeout = (elapsed.count() > std::max(1, group.timeout_seconds));
             } else {
                 ts.last_received_seconds_ago = -1;  // 从未收到
                 ts.timeout = true;

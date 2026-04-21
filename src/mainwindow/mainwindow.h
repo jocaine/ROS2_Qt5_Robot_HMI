@@ -133,6 +133,7 @@ class MainWindow : public QMainWindow {
   // 状态栏控件
   QProgressBar *battery_bar_{nullptr};
   QLabel *label_power_{nullptr};
+  QLabel *health_indicator_{nullptr};
 
   // 地图
   std::string map_path_{"./map"};

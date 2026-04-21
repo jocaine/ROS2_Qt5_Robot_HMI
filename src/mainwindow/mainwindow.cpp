@@ -176,6 +176,7 @@ MainWindow::MapToolBarButtons MainWindow::createMapToolBar(QVBoxLayout* center_l
 
   battery_bar_ = map_toolbar_widget_->batteryBar();
   label_power_ = map_toolbar_widget_->powerLabel();
+  health_indicator_ = map_toolbar_widget_->healthIndicator();
   SlotSetBatteryStatus(0, 0);
 
   return {reloc_btn, edit_map_btn, open_map_btn, save_map_btn, re_save_map_btn};
@@ -658,9 +659,24 @@ void MainWindow::registerChannel() {
   });
 
   node_health_sub_id_ = SUBSCRIBE(MSG_ID_NODE_HEALTH, [this](const SystemHealthStatus& status) {
-    if (!node_health_widget_) return;
     QMetaObject::invokeMethod(this, [this, status]() {
-      node_health_widget_->update(status);
+      if (node_health_widget_) node_health_widget_->update(status);
+      if (health_indicator_) {
+        switch (status.overall_level) {
+          case HealthLevel::Normal:
+            health_indicator_->setText("系统: 正常");
+            health_indicator_->setStyleSheet("font-weight:bold; border-radius:4px; background:#2d7a2d; color:white;");
+            break;
+          case HealthLevel::Degraded:
+            health_indicator_->setText("系统: 降级");
+            health_indicator_->setStyleSheet("font-weight:bold; border-radius:4px; background:#b8860b; color:white;");
+            break;
+          case HealthLevel::Fault:
+            health_indicator_->setText("系统: 故障");
+            health_indicator_->setStyleSheet("font-weight:bold; border-radius:4px; background:#a02020; color:white;");
+            break;
+        }
+      }
     }, Qt::QueuedConnection);
   });
 }

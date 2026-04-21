@@ -56,9 +56,12 @@ struct NodeGroupConfig {
     bool critical = true;                      // 是否关键子系统
     std::vector<std::string> expected_nodes;   // 期望的节点列表
     std::vector<std::string> health_topics;    // 关联的健康话题（可选）
+                                               // 注意：只能填 rclcomm 已订阅的话题名
+                                               // 可用话题见 rclcomm.cpp topic_last_received_ 的更新位置
+    int timeout_seconds = 5;                   // 话题超时阈值（秒），最小有效值约为检测间隔的2倍（当前 ~1s）
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
-    NodeGroupConfig, group_name, critical, expected_nodes, health_topics);
+    NodeGroupConfig, group_name, critical, expected_nodes, health_topics, timeout_seconds);
 
 struct ConfigRoot {
   std::vector<DisplayConfig> display_config;

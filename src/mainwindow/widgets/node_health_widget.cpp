@@ -1,5 +1,7 @@
 #include "node_health_widget.h"
 #include "ui_node_health_widget.h"
+#include <set>
+#include <QString>
 
 NodeHealthWidget::NodeHealthWidget(QWidget *parent)
     : QWidget(parent), ui_(std::make_unique<Ui::NodeHealthWidget>()) {
@@ -28,6 +30,15 @@ void NodeHealthWidget::update(const SystemHealthStatus &status) {
       break;
   }
 
+  // 保存当前展开状态
+  std::set<QString> expanded_groups;
+  for (int i = 0; i < ui_->tree_->topLevelItemCount(); ++i) {
+    auto *item = ui_->tree_->topLevelItem(i);
+    if (item->isExpanded())
+      expanded_groups.insert(item->text(0));
+  }
+  bool first_update = expanded_groups.empty() && ui_->tree_->topLevelItemCount() == 0;
+
   ui_->tree_->clear();
 
   for (const auto &group : status.groups) {
@@ -53,17 +64,21 @@ void NodeHealthWidget::update(const SystemHealthStatus &status) {
       topic_item->setForeground(1, topic.timeout ? QColor("#a02020") : QColor("#2d7a2d"));
     }
 
-    group_item->setExpanded(!group.healthy());
+    // 首次加载时故障组自动展开；后续保留用户操作的展开状态
+    bool was_expanded = expanded_groups.count(group_text) > 0;
+    group_item->setExpanded(first_update ? !group.healthy() : was_expanded);
   }
 
   if (!status.ungrouped_nodes.empty()) {
-    auto *ungrouped = new QTreeWidgetItem(ui_->tree_, {"未分组节点", ""});
+    QString ungrouped_key = "未分组节点";
+    auto *ungrouped = new QTreeWidgetItem(ui_->tree_, {ungrouped_key, ""});
     for (const auto &node : status.ungrouped_nodes) {
       auto *item = new QTreeWidgetItem(ungrouped, {
           QString::fromStdString(node.name), node.online ? "在线" : "离线"});
       item->setForeground(1, node.online ? QColor("#2d7a2d") : QColor("#a02020"));
     }
-    ungrouped->setExpanded(true);
+    bool was_expanded = expanded_groups.count(ungrouped_key) > 0;
+    ungrouped->setExpanded(first_update ? true : was_expanded);
   }
 }
 

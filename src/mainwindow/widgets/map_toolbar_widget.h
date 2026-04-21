@@ -26,6 +26,7 @@ class MapToolBarWidget : public QWidget {
   QToolButton *saveAsButton() const;
   QProgressBar *batteryBar() const;
   QLabel *powerLabel() const;
+  QLabel *healthIndicator() const;
 
  private:
   std::unique_ptr<Ui::MapToolBarWidget> ui_;

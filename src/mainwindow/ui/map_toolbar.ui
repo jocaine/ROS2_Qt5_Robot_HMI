@@ -76,6 +76,31 @@
     </widget>
    </item>
    <item>
+    <widget class="QLabel" name="health_indicator_">
+     <property name="minimumSize">
+      <size>
+       <width>90</width>
+       <height>24</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>90</width>
+       <height>24</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font-weight:bold; border-radius:4px; background:#555; color:white;</string>
+     </property>
+     <property name="text">
+      <string>系统: --</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

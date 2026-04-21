@@ -68,3 +68,4 @@ QToolButton *MapToolBarWidget::saveMapButton() const { return ui_->save_map_btn;
 QToolButton *MapToolBarWidget::saveAsButton() const { return ui_->re_save_map_btn; }
 QProgressBar *MapToolBarWidget::batteryBar() const { return ui_->battery_bar_; }
 QLabel *MapToolBarWidget::powerLabel() const { return ui_->label_power_; }
+QLabel *MapToolBarWidget::healthIndicator() const { return ui_->health_indicator_; }
