@@ -9,11 +9,20 @@
 using namespace basic;
 class NavGoalTableView : public QTableView {
   Q_OBJECT
+  Q_PROPERTY(int actionColumnWidth READ actionColumnWidth WRITE setActionColumnWidth)
  public:
   explicit NavGoalTableView(QWidget *_parent_widget = nullptr);
   ~NavGoalTableView() override;
 
+  int actionColumnWidth() const { return action_column_width_; }
+  void setActionColumnWidth(int w) {
+    action_column_width_ = w;
+    setColumnWidth(2, w);
+    setColumnWidth(3, w);
+  }
+
  private:
+  int action_column_width_{64};
   QStandardItemModel *table_model_;
   TopologyMap topologyMap_;
   RobotPose robot_pose_;

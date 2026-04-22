@@ -20,14 +20,24 @@ NavGoalTableView::NavGoalTableView(QWidget *_parent_widget)
                   << "删除"
                   << "运行";
   QHeaderView *headerView = new QHeaderView(Qt::Horizontal);
-  headerView->setSectionResizeMode(QHeaderView::ResizeToContents);
   headerView->setSelectionBehavior(QAbstractItemView::SelectRows);
   headerView->setCascadingSectionResizes(false);
   setSelectionBehavior(QAbstractItemView::SelectRows);
   setSelectionMode(QAbstractItemView::SingleSelection);
   this->setHorizontalHeader(headerView);
-  // 添加数据模型
   table_model_->setHorizontalHeaderLabels(table_h_headers);
+  // setSectionResizeMode requires the model to be set first (section count must match)
+  headerView->setSectionResizeMode(0, QHeaderView::Stretch);
+  headerView->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+  headerView->setSectionResizeMode(2, QHeaderView::Fixed);
+  headerView->setSectionResizeMode(3, QHeaderView::Fixed);
+  setColumnWidth(2, action_column_width_);
+  setColumnWidth(3, action_column_width_);
+
+  verticalHeader()->hide();
+  setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  setMinimumHeight(0);
+
   connect(table_model_, &QStandardItemModel::itemChanged, this,
           &NavGoalTableView::onItemChanged);
 }

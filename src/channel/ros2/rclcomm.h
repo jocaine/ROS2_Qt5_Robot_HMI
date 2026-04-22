@@ -41,7 +41,7 @@
 class rclcomm : public VirtualChannelNode {
  public:
   rclcomm();
-  ~rclcomm() override = default;
+  ~rclcomm() override;
 
   // ---- 生命周期 (继承自 VirtualChannelNode) ----
   bool Start() override;

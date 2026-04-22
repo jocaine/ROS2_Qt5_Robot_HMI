@@ -153,6 +153,11 @@ void MainWindow::initGlobalStyle() {
   CDockManager::setConfigFlag(CDockManager::MiddleMouseButtonClosesTab, true);
   CDockManager::setConfigFlag(CDockManager::EqualSplitOnInsertion, true);
   CDockManager::setConfigFlag(CDockManager::ShowTabTextOnlyForActiveTab, true);
+  // X11 native title bar hands drag events to the WM, breaking ADS drop overlays
+  CDockManager::setConfigFlag(CDockManager::FloatingContainerForceQWidgetTitleBar, true);
+  // X11 compositing fails to repaint behind frameless windows during drag; use window-frame preview
+  CDockManager::setConfigFlag(CDockManager::DragPreviewShowsContentPixmap, true);
+  CDockManager::setConfigFlag(CDockManager::DragPreviewHasWindowFrame, true);
   CDockManager::setAutoHideConfigFlags(CDockManager::DefaultAutoHideConfig);
   dock_manager_ = new CDockManager(this);
   ui->verticalLayout->setContentsMargins(0, 0, 0, 5);
@@ -266,7 +271,6 @@ void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* cente
   DisplayConfigDockWidget->setWidget(display_config_widget_);
   DisplayConfigDockWidget->setMinimumSizeHintMode(ads::CDockWidget::MinimumSizeHintFromDockWidget);
   DisplayConfigDockWidget->setMinimumSize(250, 200);
-  DisplayConfigDockWidget->setMaximumSize(400, 9999);
   auto display_config_area =
       dock_manager_->addDockWidget(ads::DockWidgetArea::LeftDockWidgetArea,
                                    DisplayConfigDockWidget, center_docker_area_);
@@ -289,7 +293,6 @@ void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* cente
   nav_goal_list_dock_widget->setMinimumSizeHintMode(
       CDockWidget::MinimumSizeHintFromDockWidget);
   nav_goal_list_dock_widget->setMinimumSize(200, 150);
-  nav_goal_list_dock_widget->setMaximumSize(480, 9999);
   dock_manager_->addDockWidget(ads::DockWidgetArea::RightDockWidgetArea,
                                nav_goal_list_dock_widget, center_docker_area_);
   nav_goal_list_dock_widget->toggleView(false);
@@ -365,6 +368,8 @@ void MainWindow::createDockPanels(QVBoxLayout* center_layout, QHBoxLayout* cente
     ads::CDockWidget *dock_widget = new ads::CDockWidget(std::string("image/" + one_image.location).c_str());
     dock_widget->setWidget(image_frame_map_[one_image.location]);
 
+    dock_manager_->addDockWidget(ads::DockWidgetArea::RightDockWidgetArea,
+                                 dock_widget, center_docker_area_);
     dock_widget->toggleView(false);
     ui->menuView->addAction(dock_widget->toggleViewAction());
   }

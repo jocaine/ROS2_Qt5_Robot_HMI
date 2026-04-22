@@ -476,3 +476,211 @@ QWidget#setPoseWidget QPushButton#okButton:pressed {
     background-color: #1d8348;
     border-color: #1d8348;
 }
+
+/* ── NodeHealthWidget ─────────────────────────────────────── */
+
+QWidget#NodeHealthWidget {
+    background-color: #ffffff;
+    border: 1px solid #d9e2ec;
+    border-radius: 10px;
+}
+
+QWidget#NodeHealthWidget QTreeWidget {
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #2f3542;
+    font-size: 12px;
+    outline: none;
+}
+
+QWidget#NodeHealthWidget QTreeWidget::item {
+    padding: 3px 4px;
+    border: none;
+}
+
+QWidget#NodeHealthWidget QTreeWidget::item:selected {
+    background-color: #eef6ff;
+    color: #1976d2;
+}
+
+QWidget#NodeHealthWidget QTreeWidget::item:hover {
+    background-color: #f5f9ff;
+}
+
+QWidget#NodeHealthWidget QTreeWidget::branch {
+    background: transparent;
+}
+
+QWidget#NodeHealthWidget QHeaderView::section {
+    background-color: #f4f6f8;
+    color: #5f6b7a;
+    font-weight: 500;
+    font-size: 11px;
+    padding: 4px 6px;
+    border: none;
+    border-bottom: 1px solid #d9e2ec;
+}
+
+/* ── DisplayConfigWidget ──────────────────────────────────── */
+
+QWidget#DisplayConfigWidget {
+    background-color: #f4f6f8;
+}
+
+QWidget#DisplayConfigWidget QTabWidget::pane {
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    background-color: #ffffff;
+}
+
+QWidget#DisplayConfigWidget QTabBar::tab {
+    background-color: #f0f3f7;
+    color: #5f6b7a;
+    padding: 6px 14px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    margin-right: 2px;
+    font-size: 12px;
+}
+
+QWidget#DisplayConfigWidget QTabBar::tab:selected {
+    background-color: #ffffff;
+    color: #1976d2;
+    font-weight: 500;
+}
+
+QWidget#DisplayConfigWidget QTabBar::tab:hover:!selected {
+    background-color: #e4eaf2;
+}
+
+QWidget#DisplayConfigWidget QScrollArea {
+    border: none;
+    background-color: transparent;
+}
+
+QWidget#DisplayConfigWidget QTableWidget {
+    border: 1px solid #d9e2ec;
+    border-radius: 4px;
+    background-color: #ffffff;
+    gridline-color: #edf1f5;
+    color: #2f3542;
+    font-size: 12px;
+}
+
+QWidget#DisplayConfigWidget QTableWidget::item {
+    padding: 4px;
+}
+
+QWidget#DisplayConfigWidget QTableWidget::item:selected {
+    background-color: #eef6ff;
+    color: #1976d2;
+}
+
+QWidget#DisplayConfigWidget QHeaderView::section {
+    background-color: #f4f6f8;
+    color: #5f6b7a;
+    font-weight: 500;
+    font-size: 11px;
+    padding: 4px 6px;
+    border: none;
+    border-bottom: 1px solid #d9e2ec;
+}
+
+QWidget#DisplayConfigWidget QGroupBox {
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    background-color: #f9fafc;
+    font-size: 12px;
+    color: #2f3542;
+}
+
+QWidget#DisplayConfigWidget QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 5px;
+    color: #5f6b7a;
+    font-weight: 500;
+}
+
+QWidget#DisplayConfigWidget QScrollBar:vertical {
+    border: none;
+    background: #f4f6f8;
+    width: 6px;
+    border-radius: 3px;
+}
+
+QWidget#DisplayConfigWidget QScrollBar::handle:vertical {
+    background: #c5cdd8;
+    border-radius: 3px;
+    min-height: 20px;
+}
+
+QWidget#DisplayConfigWidget QScrollBar::handle:vertical:hover {
+    background: #9aa4b2;
+}
+
+QWidget#DisplayConfigWidget QScrollBar::add-line:vertical,
+QWidget#DisplayConfigWidget QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+/* ── TaskListPanel QTableView (NavGoalTableView) ──────────── */
+
+QWidget#taskListPanel QTableView {
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    background-color: #ffffff;
+    gridline-color: #edf1f5;
+    color: #2f3542;
+    font-size: 12px;
+    outline: none;
+}
+
+QWidget#taskListPanel QTableView::item {
+    padding: 4px;
+    border: none;
+}
+
+QWidget#taskListPanel QTableView::item:selected {
+    background-color: #eef6ff;
+    color: #1976d2;
+}
+
+QWidget#taskListPanel QHeaderView::section {
+    background-color: #f4f6f8;
+    color: #5f6b7a;
+    font-weight: 500;
+    font-size: 11px;
+    padding: 4px 6px;
+    border: none;
+    border-bottom: 1px solid #d9e2ec;
+}
+
+QWidget#taskListPanel QScrollBar:vertical {
+    border: none;
+    background: #f4f6f8;
+    width: 6px;
+    border-radius: 3px;
+}
+
+QWidget#taskListPanel QScrollBar::handle:vertical {
+    background: #c5cdd8;
+    border-radius: 3px;
+    min-height: 20px;
+}
+
+QWidget#taskListPanel QScrollBar::handle:vertical:hover {
+    background: #9aa4b2;
+}
+
+QWidget#taskListPanel QScrollBar::add-line:vertical,
+QWidget#taskListPanel QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+NavGoalTableView {
+    qproperty-actionColumnWidth: 64;
+}

@@ -52,7 +52,18 @@ rclcomm::rclcomm() {
 }
 
 
+rclcomm::~rclcomm() {
+  health_check_running_ = false;
+  if (health_check_thread_.joinable()) {
+    health_check_thread_.join();
+  }
+}
+
+
 bool rclcomm::Start() {
+  if (health_check_thread_.joinable()) {
+    return false;  // 已在运行，防止重入
+  }
   // ---- 1. 初始化 ROS2 节点和多线程执行器 ----
   rclcpp::init(0, nullptr);
   m_executor = std::make_unique<rclcpp::executors::MultiThreadedExecutor>();

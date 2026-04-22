@@ -91,7 +91,56 @@
   "map_config": {
     "path": ""
   },
-  "nodeGroup_config": [],
+  "nodeGroup_config": [
+    {
+      "critical": true,
+      "expected_nodes": [
+        "/robot_state_publisher"
+      ],
+      "group_name": "传感器",
+      "health_topics": [
+        "/scan",
+        "/odom"
+      ],
+      "timeout_seconds": 3
+    },
+    {
+      "critical": true,
+      "expected_nodes": [
+        "/amcl"
+      ],
+      "group_name": "定位系统",
+      "health_topics": [
+        "/odom"
+      ],
+      "timeout_seconds": 5
+    },
+    {
+      "critical": true,
+      "expected_nodes": [
+        "/bt_navigator",
+        "/controller_server",
+        "/planner_server"
+      ],
+      "group_name": "导航核心",
+      "health_topics": [
+        "/plan",
+        "/local_plan"
+      ],
+      "timeout_seconds": 5
+    },
+    {
+      "critical": false,
+      "expected_nodes": [
+        "/map_server"
+      ],
+      "group_name": "地图服务",
+      "health_topics": [
+        "/map"
+      ],
+      "timeout_seconds": 10
+    }
+  ],
   "robot_shape_config": {
     "color": "0x00000FF",
     "is_ellipse": false,

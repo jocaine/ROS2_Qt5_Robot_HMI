@@ -8,9 +8,6 @@ TaskListPanelWidget::TaskListPanelWidget(QWidget *parent)
     : QWidget(parent), ui_(std::make_unique<Ui::TaskListPanelWidget>()) {
   ui_->setupUi(this);
   setObjectName("taskListPanel");
-
-  auto *layout = new QVBoxLayout(ui_->table_container);
-  layout->setContentsMargins(0, 0, 0, 0);
 }
 
 TaskListPanelWidget::~TaskListPanelWidget() = default;
