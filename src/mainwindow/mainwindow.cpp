@@ -15,6 +15,7 @@
 #include <opencv2/opencv.hpp>
 #include <QFileInfo>
 #include <QFile>
+#include <QFileDialog>
 #include "AutoHideDockContainer.h"
 #include "DockAreaTabBar.h"
 #include "DockAreaTitleBar.h"

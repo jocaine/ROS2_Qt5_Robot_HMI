@@ -1066,6 +1066,398 @@ QSlider::handle:horizontal:hover {
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="nodeGroupTab">
+      <attribute name="title">
+       <string>子系统监控</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="nodeGroupLayout">
+       <property name="leftMargin">
+        <number>10</number>
+       </property>
+       <property name="topMargin">
+        <number>10</number>
+       </property>
+       <property name="rightMargin">
+        <number>10</number>
+       </property>
+       <property name="bottomMargin">
+        <number>10</number>
+       </property>
+       <property name="spacing">
+        <number>8</number>
+       </property>
+       <item>
+        <widget class="QSplitter" name="nodeGroupSplitter">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <widget class="QWidget" name="nodeGroupLeftPanel">
+          <layout class="QVBoxLayout" name="nodeGroupLeftLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>4</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <item>
+            <widget class="QListWidget" name="nodeGroupList">
+             <property name="styleSheet">
+              <string notr="true">QListWidget { border: 1px solid #d0d0d0; border-radius: 4px; background: #fff; }
+QListWidget::item { padding: 6px 8px; }
+QListWidget::item:selected { background: #1976d2; color: #fff; border-radius: 3px; }
+QListWidget::item:hover { background: #e3f2fd; }</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="groupBtnLayout">
+             <item>
+              <widget class="QPushButton" name="addGroupBtn">
+               <property name="styleSheet">
+                <string notr="true">QPushButton { border: 1px solid #d0d0d0; border-radius: 4px; padding: 4px 8px; background: #f5f5f5; }
+QPushButton:hover { background: #e0e0e0; }</string>
+               </property>
+               <property name="text">
+                <string>+ 新增子系统</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="delGroupBtn">
+               <property name="styleSheet">
+                <string notr="true">QPushButton { border: 1px solid #d0d0d0; border-radius: 4px; padding: 4px 8px; background: #f5f5f5; }
+QPushButton:hover { background: #e0e0e0; }</string>
+               </property>
+               <property name="text">
+                <string>- 删除子系统</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QScrollArea" name="nodeGroupRightScroll">
+          <property name="styleSheet">
+           <string notr="true">QScrollArea { border: none; }</string>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="nodeGroupRightContent">
+           <layout class="QVBoxLayout" name="nodeGroupRightLayout">
+            <property name="leftMargin">
+             <number>8</number>
+            </property>
+            <property name="topMargin">
+             <number>8</number>
+            </property>
+            <property name="rightMargin">
+             <number>8</number>
+            </property>
+            <property name="bottomMargin">
+             <number>8</number>
+            </property>
+            <property name="spacing">
+             <number>8</number>
+            </property>
+            <item>
+             <layout class="QHBoxLayout" name="groupNameRowLayout">
+              <item>
+               <widget class="QLabel" name="groupNameLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>55</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>55</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>名称:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="groupNameEdit">
+                <property name="styleSheet">
+                 <string notr="true">QLineEdit { border:1px solid #d0d0d0; border-radius:4px; padding:4px; }</string>
+                </property>
+                <property name="placeholderText">
+                 <string>如：导航子系统、感知子系统</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="criticalBlockLayout">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="criticalRowLayout">
+                <item>
+                 <widget class="QCheckBox" name="groupCriticalCheckbox">
+                  <property name="styleSheet">
+                   <string notr="true">QCheckBox { font-weight: bold; }</string>
+                  </property>
+                  <property name="text">
+                   <string>影响运行</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="criticalSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QLabel" name="criticalHintLabel">
+                <property name="styleSheet">
+                 <string notr="true">color: #888; font-size: 11px;</string>
+                </property>
+                <property name="text">
+                 <string>勾选后该子系统故障将触发[系统故障]告警；不勾选仅触发[系统降级]</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="timeoutBlockLayout">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="timeoutRowLayout">
+                <item>
+                 <widget class="QLabel" name="timeoutLabel">
+                  <property name="minimumSize">
+                   <size>
+                    <width>70</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>70</width>
+                    <height>16777215</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>数据超时:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QSpinBox" name="groupTimeoutSpinbox">
+                  <property name="suffix">
+                   <string> 秒</string>
+                  </property>
+                  <property name="minimum">
+                   <number>1</number>
+                  </property>
+                  <property name="maximum">
+                   <number>60</number>
+                  </property>
+                  <property name="value">
+                   <number>5</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="timeoutSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QLabel" name="timeoutHintLabel">
+                <property name="styleSheet">
+                 <string notr="true">color: #888; font-size: 11px;</string>
+                </property>
+                <property name="text">
+                 <string>超过此时间未收到话题数据，视为数据中断</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QLabel" name="nodesLabel">
+              <property name="styleSheet">
+               <string notr="true">font-weight: bold; color: #333;</string>
+              </property>
+              <property name="text">
+               <string>包含的节点:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="nodesHintLabel">
+              <property name="styleSheet">
+               <string notr="true">color: #888; font-size: 11px;</string>
+              </property>
+              <property name="text">
+               <string>该子系统应包含的 ROS 节点名称，缺失时触发告警</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="nodesScrollContent">
+              <layout class="QVBoxLayout" name="nodesScrollLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <property name="spacing">
+                <number>2</number>
+               </property>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="addNodeBtn">
+              <property name="styleSheet">
+               <string notr="true">QPushButton { border: 1px solid #d0d0d0; border-radius: 4px; padding: 4px 8px; background: #f5f5f5; }
+QPushButton:hover { background: #e0e0e0; }</string>
+              </property>
+              <property name="text">
+               <string>+ 添加节点</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="topicsLabel">
+              <property name="styleSheet">
+               <string notr="true">font-weight: bold; color: #333;</string>
+              </property>
+              <property name="text">
+               <string>数据监控话题:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="topicsHintLabel">
+              <property name="styleSheet">
+               <string notr="true">color: #888; font-size: 11px;</string>
+              </property>
+              <property name="text">
+               <string>填入需要监控数据流的 ROS 话题名，超时未收到数据视为异常</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="topicsScrollContent">
+              <layout class="QVBoxLayout" name="topicsScrollLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <property name="spacing">
+                <number>2</number>
+               </property>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="addTopicBtn">
+              <property name="styleSheet">
+               <string notr="true">QPushButton { border: 1px solid #d0d0d0; border-radius: 4px; padding: 4px 8px; background: #f5f5f5; }
+QPushButton:hover { background: #e0e0e0; }</string>
+              </property>
+              <property name="text">
+               <string>+ 添加话题</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="nodeGroupRightSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="saveNodeGroupBtn">
+         <property name="styleSheet">
+          <string notr="true">QPushButton { border:1px solid #1976d2; border-radius:4px; padding:6px 16px;
+              background:#1976d2; color:#fff; font-weight:bold; }
+QPushButton:hover { background:#1565c0; }</string>
+         </property>
+         <property name="text">
+          <string>保存并热重载</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>

@@ -8,7 +8,8 @@
               OneValue(kSetNavGoalPose, ) OneValue(kSetRelocPose, )            \
                   OneValue(kSetRobotSpeed, ) OneValue(kBatteryState, ) OneValue(kImage, ) \
                   OneValue(kRobotFootprint, ) OneValue(kOccMap, ) OneValue(kTopologyMap, ) \
-                  OneValue(kTopologyMapUpdate, ) OneValue(kNodeHealth, )
+                  OneValue(kTopologyMapUpdate, ) OneValue(kNodeHealth, ) \
+                  OneValue(kReloadNodeGroupConfig, )
  
 DECLARE_ENUM(MsgId, SOME_ENUM)
 DEFINE_ENUM(MsgId, SOME_ENUM)
@@ -31,6 +32,7 @@ DEFINE_ENUM(MsgId, SOME_ENUM)
 #define MSG_ID_TOPOLOGY_MAP ToString(MsgId::kTopologyMap)
 #define MSG_ID_TOPOLOGY_MAP_UPDATE ToString(MsgId::kTopologyMapUpdate)
 #define MSG_ID_NODE_HEALTH ToString(MsgId::kNodeHealth)
+#define MSG_ID_RELOAD_NODE_GROUP_CONFIG ToString(MsgId::kReloadNodeGroupConfig)
 
 #define DISPLAY_ROBOT ToString(MsgId::kRobotPose)
 #define DISPLAY_MAP ToString(MsgId::kOccupancyMap)

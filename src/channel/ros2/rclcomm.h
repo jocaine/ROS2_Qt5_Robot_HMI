@@ -119,6 +119,7 @@ class rclcomm : public VirtualChannelNode {
   Framework::MessageBus::CallbackId reloc_pose_sub_id_{0};
   Framework::MessageBus::CallbackId robot_speed_sub_id_{0};
   Framework::MessageBus::CallbackId topology_update_sub_id_{0};
+  Framework::MessageBus::CallbackId reload_node_group_sub_id_{0};
   mutable std::mutex health_mutex_;
   std::map<std::string, std::chrono::steady_clock::time_point> topic_last_received_;
 

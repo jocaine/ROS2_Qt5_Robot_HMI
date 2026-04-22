@@ -229,7 +229,10 @@ bool rclcomm::Start() {
     topology_msgs::msg::TopologyMap ros_msg = ConvertToRosMsg(topology_map);
     topology_map_update_publisher_->publish(ros_msg);
   });
-  
+  reload_node_group_sub_id_ = SUBSCRIBE(MSG_ID_RELOAD_NODE_GROUP_CONFIG, [this](const std::string&) {
+    LOG_INFO("Node group config reloaded, takes effect on next health check");
+  });
+
   init_flag_ = true;
 
   // 健康检测独立线程，与主循环解耦
@@ -262,6 +265,10 @@ bool rclcomm::Stop() {
   if (topology_update_sub_id_ != 0) {
     UNSUBSCRIBE(MSG_ID_TOPOLOGY_MAP_UPDATE, topology_update_sub_id_);
     topology_update_sub_id_ = 0;
+  }
+  if (reload_node_group_sub_id_ != 0) {
+    UNSUBSCRIBE(MSG_ID_RELOAD_NODE_GROUP_CONFIG, reload_node_group_sub_id_);
+    reload_node_group_sub_id_ = 0;
   }
 
   init_flag_ = false;

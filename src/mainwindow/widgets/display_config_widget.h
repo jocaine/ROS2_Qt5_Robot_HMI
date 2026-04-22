@@ -1,22 +1,6 @@
 #pragma once
 #include <QWidget>
-#include <QVBoxLayout>
-#include <QScrollArea>
-#include <QLabel>
-#include <QToolButton>
-#include <QHBoxLayout>
-#include <QTabWidget>
-#include <QGroupBox>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QPushButton>
-#include <QDoubleSpinBox>
-#include <QSlider>
-#include <QColorDialog>
-#include <QFileDialog>
-#include <QTableWidget>
-#include <QHeaderView>
-#include <QComboBox>
+#include <QColor>
 #include <memory>
 #include <map>
 #include <string>
@@ -30,13 +14,24 @@ namespace Display {
 class DisplayManager;
 }
 
+class QToolButton;
+class QLineEdit;
+class QCheckBox;
+class QPushButton;
+class QSlider;
+class QLabel;
+class QTableWidget;
+class QComboBox;
+class QListWidget;
+class QSpinBox;
+
 class DisplayConfigWidget : public QWidget {
   Q_OBJECT
 
  public:
   explicit DisplayConfigWidget(QWidget *parent = nullptr);
   ~DisplayConfigWidget();
-  
+
   void SetDisplayManager(Display::DisplayManager *manager);
   void SetChannelList(const std::vector<std::string> &channel_list);
   void LoadConfig();
@@ -63,44 +58,45 @@ class DisplayConfigWidget : public QWidget {
   void InitImageConfigTab();
   void InitRobotShapeTab();
   void InitChannelConfigTab();
+  void InitNodeGroupTab();
   void RefreshKeyValueTab();
+  void RefreshNodeGroupList();
+  void LoadGroupDetail(int index);
+  void RefreshNodesList();
+  void RefreshTopicsList();
+  void OnNodeGroupSelected(int row);
+  void OnAddNodeGroup();
+  void OnDeleteNodeGroup();
+  void OnSaveAndReloadNodeGroup();
+  void OnAddExpectedNode();
+  void OnAddHealthTopic();
   void UpdateDisplayVisibility(const std::string &display_name, bool visible);
   void AutoSaveConfig();
   std::string ExtractChannelType(const std::string &channel_path);
-  
+
   std::unique_ptr<Ui::DisplayConfigWidget> ui_;
   Display::DisplayManager *display_manager_{nullptr};
-  QVBoxLayout *main_layout_{nullptr};
-  QTabWidget *tab_widget_{nullptr};
-  
-  QWidget *display_tab_{nullptr};
-  QScrollArea *display_scroll_area_{nullptr};
-  QWidget *display_scroll_content_{nullptr};
+
   std::map<std::string, QToolButton*> display_toggle_buttons_;
   std::map<std::string, QLineEdit*> display_topic_edits_;
-  
-  QWidget *key_value_tab_{nullptr};
-  QScrollArea *key_value_scroll_area_{nullptr};
-  QWidget *key_value_scroll_content_{nullptr};
   std::map<std::string, QLineEdit*> key_value_edits_;
-  
-  QWidget *image_tab_{nullptr};
-  QTableWidget *image_table_{nullptr};
-  
-  QWidget *robot_shape_tab_{nullptr};
+
   QTableWidget *robot_points_table_{nullptr};
   QCheckBox *robot_is_ellipse_checkbox_{nullptr};
   QPushButton *robot_color_button_{nullptr};
   QSlider *robot_opacity_slider_{nullptr};
   QLabel *robot_opacity_label_{nullptr};
   QColor robot_color_;
-  
-  QWidget *channel_config_tab_{nullptr};
+
   QComboBox *channel_type_combo_{nullptr};
   QLineEdit *rosbridge_ip_edit_{nullptr};
   QLineEdit *rosbridge_port_edit_{nullptr};
-  QPushButton *reconnect_channel_btn_{nullptr};
   bool is_loading_config_{false};
   std::vector<std::string> channel_list_;
-};
 
+  QListWidget *node_group_list_{nullptr};
+  QLineEdit *group_name_edit_{nullptr};
+  QCheckBox *group_critical_checkbox_{nullptr};
+  QSpinBox *group_timeout_spinbox_{nullptr};
+  int current_group_index_{-1};
+};

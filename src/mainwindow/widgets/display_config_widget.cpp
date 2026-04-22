@@ -6,6 +6,7 @@
 #include "config/config_define.h"
 #include "msg/msg_info.h"
 #include "logger/logger.h"
+#include "core/framework/framework.h"
 #include "ui_display_config_widget.h"
 #include <QDebug>
 #include <QFrame>
@@ -13,6 +14,15 @@
 #include <QAbstractItemView>
 #include <QInputDialog>
 #include <QTimer>
+#include <QColorDialog>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QToolButton>
+#include <QSpacerItem>
+#include <QSizePolicy>
 
 DisplayConfigWidget::DisplayConfigWidget(QWidget *parent)
     : QWidget(parent), ui_(std::make_unique<Ui::DisplayConfigWidget>()), robot_color_(QColor(0, 0, 255)) {
@@ -24,21 +34,16 @@ DisplayConfigWidget::DisplayConfigWidget(QWidget *parent)
 DisplayConfigWidget::~DisplayConfigWidget() {}
 
 void DisplayConfigWidget::InitUI() {
-  main_layout_ = qobject_cast<QVBoxLayout *>(layout());
-  tab_widget_ = ui_->tabWidget;
-
   InitDisplayConfigTab();
   InitChannelConfigTab();
   InitKeyValueTab();
   InitImageConfigTab();
   InitRobotShapeTab();
+  InitNodeGroupTab();
 }
 
 void DisplayConfigWidget::InitDisplayConfigTab() {
-  display_tab_ = ui_->displayTab;
-  display_scroll_area_ = ui_->displayScrollArea;
-  display_scroll_content_ = ui_->displayScrollContent;
-  auto *scroll_layout = qobject_cast<QVBoxLayout *>(display_scroll_content_->layout());
+  auto *scroll_layout = qobject_cast<QVBoxLayout *>(ui_->displayScrollContent->layout());
   
   std::vector<std::pair<std::string, std::string>> display_types = {
     {DISPLAY_MAP, ":/images/classes/Map.png"},
@@ -53,7 +58,7 @@ void DisplayConfigWidget::InitDisplayConfigTab() {
   };
   
   for (const auto &[display_name, icon_path] : display_types) {
-    QGroupBox *group_box = new QGroupBox(QString::fromStdString(display_name), display_scroll_content_);
+    QGroupBox *group_box = new QGroupBox(QString::fromStdString(display_name), ui_->displayScrollContent);
     group_box->setStyleSheet(R"(
       QGroupBox {
         border: 1px solid #d0d0d0;
@@ -140,18 +145,13 @@ void DisplayConfigWidget::InitDisplayConfigTab() {
 }
 
 void DisplayConfigWidget::InitKeyValueTab() {
-  key_value_tab_ = ui_->keyValueTab;
-  key_value_scroll_area_ = ui_->keyValueScrollArea;
-  key_value_scroll_content_ = ui_->keyValueScrollContent;
-
   connect(ui_->addKeyValueBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddKeyValue);
-
   RefreshKeyValueTab();
 }
 
 void DisplayConfigWidget::RefreshKeyValueTab() {
   QLayoutItem* item;
-  while ((item = key_value_scroll_content_->layout()->takeAt(0)) != nullptr) {
+  while ((item = ui_->keyValueScrollContent->layout()->takeAt(0)) != nullptr) {
     if (item->widget()) {
       item->widget()->deleteLater();
     }
@@ -162,7 +162,7 @@ void DisplayConfigWidget::RefreshKeyValueTab() {
   auto &config = Config::ConfigManager::Instance()->GetRootConfig();
   
   for (const auto &[key, value] : config.key_value) {
-    QWidget *item_widget = new QWidget(key_value_scroll_content_);
+    QWidget *item_widget = new QWidget(ui_->keyValueScrollContent);
     item_widget->setStyleSheet(R"(
       QWidget {
         background-color: #f9f9f9;
@@ -227,23 +227,20 @@ void DisplayConfigWidget::RefreshKeyValueTab() {
     });
     item_layout->addWidget(remove_btn);
     
-    key_value_scroll_content_->layout()->addWidget(item_widget);
+    ui_->keyValueScrollContent->layout()->addWidget(item_widget);
   }
   
-  key_value_scroll_content_->layout()->addItem(new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
+  ui_->keyValueScrollContent->layout()->addItem(new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
 void DisplayConfigWidget::InitImageConfigTab() {
-  image_tab_ = ui_->imageTab;
-  image_table_ = ui_->imageTable;
-  image_table_->horizontalHeader()->setStretchLastSection(true);
+  ui_->imageTable->horizontalHeader()->setStretchLastSection(true);
 
-  connect(image_table_, &QTableWidget::cellChanged, this, &DisplayConfigWidget::OnImageConfigChanged);
+  connect(ui_->imageTable, &QTableWidget::cellChanged, this, &DisplayConfigWidget::OnImageConfigChanged);
   connect(ui_->addImageBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddImageConfig);
 }
 
 void DisplayConfigWidget::InitRobotShapeTab() {
-  robot_shape_tab_ = ui_->robotShapeTab;
   robot_points_table_ = ui_->robotPointsTable;
   robot_points_table_->horizontalHeader()->setStretchLastSection(true);
   connect(robot_points_table_, &QTableWidget::cellChanged, this, &DisplayConfigWidget::OnRobotShapePointChanged);
@@ -320,7 +317,6 @@ std::string DisplayConfigWidget::ExtractChannelType(const std::string &channel_p
 }
 
 void DisplayConfigWidget::InitChannelConfigTab() {
-  channel_config_tab_ = ui_->channelConfigTab;
   channel_type_combo_ = ui_->channelTypeCombo;
 
   connect(channel_type_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
@@ -397,8 +393,7 @@ void DisplayConfigWidget::InitChannelConfigTab() {
                                 QMessageBox::Ok);
     }
   });
-  reconnect_channel_btn_ = ui_->reconnectChannelBtn;
-  connect(reconnect_channel_btn_, &QPushButton::clicked, [this]() {
+  connect(ui_->reconnectChannelBtn, &QPushButton::clicked, [this]() {
     QMessageBox::information(this, "提示", 
                               "请重启应用程序以使通道配置生效。\n"
                               "当前配置已保存。",
@@ -456,8 +451,8 @@ void DisplayConfigWidget::OnRemoveKeyValue(const std::string &key) {
 }
 
 void DisplayConfigWidget::OnAddImageConfig() {
-  int row = image_table_->rowCount();
-  image_table_->insertRow(row);
+  int row = ui_->imageTable->rowCount();
+  ui_->imageTable->insertRow(row);
   
   QTableWidgetItem *location_item = new QTableWidgetItem("");
   QTableWidgetItem *topic_item = new QTableWidgetItem("");
@@ -483,7 +478,7 @@ void DisplayConfigWidget::OnAddImageConfig() {
     }
   )");
   connect(enable_checkbox, &QCheckBox::toggled, [this, row](bool checked) {
-    image_table_->item(row, 2)->setText(checked ? "true" : "false");
+    ui_->imageTable->item(row, 2)->setText(checked ? "true" : "false");
     OnImageConfigChanged(row);
   });
   
@@ -504,17 +499,17 @@ void DisplayConfigWidget::OnAddImageConfig() {
     OnRemoveImageConfig(row);
   });
   
-  image_table_->setItem(row, 0, location_item);
-  image_table_->setItem(row, 1, topic_item);
-  image_table_->setItem(row, 2, enable_item);
-  image_table_->setCellWidget(row, 2, enable_checkbox);
-  image_table_->setCellWidget(row, 3, remove_btn);
+  ui_->imageTable->setItem(row, 0, location_item);
+  ui_->imageTable->setItem(row, 1, topic_item);
+  ui_->imageTable->setItem(row, 2, enable_item);
+  ui_->imageTable->setCellWidget(row, 2, enable_checkbox);
+  ui_->imageTable->setCellWidget(row, 3, remove_btn);
   
   OnImageConfigChanged(row);
 }
 
 void DisplayConfigWidget::OnRemoveImageConfig(int row) {
-  image_table_->removeRow(row);
+  ui_->imageTable->removeRow(row);
   
   auto &config = Config::ConfigManager::Instance()->GetRootConfig();
   if (row < static_cast<int>(config.images.size())) {
@@ -522,19 +517,19 @@ void DisplayConfigWidget::OnRemoveImageConfig(int row) {
     AutoSaveConfig();
   }
   
-  for (int i = row; i < image_table_->rowCount(); i++) {
-    QPushButton *btn = qobject_cast<QPushButton*>(image_table_->cellWidget(i, 3));
+  for (int i = row; i < ui_->imageTable->rowCount(); i++) {
+    QPushButton *btn = qobject_cast<QPushButton*>(ui_->imageTable->cellWidget(i, 3));
     if (btn) {
       btn->disconnect();
       connect(btn, &QPushButton::clicked, [this, i]() {
         OnRemoveImageConfig(i);
       });
     }
-    QCheckBox *checkbox = qobject_cast<QCheckBox*>(image_table_->cellWidget(i, 2));
+    QCheckBox *checkbox = qobject_cast<QCheckBox*>(ui_->imageTable->cellWidget(i, 2));
     if (checkbox) {
       checkbox->disconnect();
       connect(checkbox, &QCheckBox::toggled, [this, i](bool checked) {
-        image_table_->item(i, 2)->setText(checked ? "true" : "false");
+        ui_->imageTable->item(i, 2)->setText(checked ? "true" : "false");
         OnImageConfigChanged(i);
       });
     }
@@ -542,15 +537,15 @@ void DisplayConfigWidget::OnRemoveImageConfig(int row) {
 }
 
 void DisplayConfigWidget::OnImageConfigChanged(int row) {
-  if (row < 0 || row >= image_table_->rowCount()) {
+  if (row < 0 || row >= ui_->imageTable->rowCount()) {
     return;
   }
   
   auto &config = Config::ConfigManager::Instance()->GetRootConfig();
   
-  QTableWidgetItem *location_item = image_table_->item(row, 0);
-  QTableWidgetItem *topic_item = image_table_->item(row, 1);
-  QCheckBox *enable_checkbox = qobject_cast<QCheckBox*>(image_table_->cellWidget(row, 2));
+  QTableWidgetItem *location_item = ui_->imageTable->item(row, 0);
+  QTableWidgetItem *topic_item = ui_->imageTable->item(row, 1);
+  QCheckBox *enable_checkbox = qobject_cast<QCheckBox*>(ui_->imageTable->cellWidget(row, 2));
   
   if (!location_item || !topic_item || !enable_checkbox) {
     return;
@@ -663,12 +658,12 @@ void DisplayConfigWidget::LoadConfig() {
   
   RefreshKeyValueTab();
   
-  image_table_->blockSignals(true);
-  image_table_->setRowCount(0);
+  ui_->imageTable->blockSignals(true);
+  ui_->imageTable->setRowCount(0);
   for (size_t i = 0; i < config.images.size(); i++) {
     const auto &image_config = config.images[i];
-    int row = image_table_->rowCount();
-    image_table_->insertRow(row);
+    int row = ui_->imageTable->rowCount();
+    ui_->imageTable->insertRow(row);
     
     QTableWidgetItem *location_item = new QTableWidgetItem(QString::fromStdString(image_config.location));
     QTableWidgetItem *topic_item = new QTableWidgetItem(QString::fromStdString(image_config.topic));
@@ -694,7 +689,7 @@ void DisplayConfigWidget::LoadConfig() {
       }
     )");
     connect(enable_checkbox, &QCheckBox::toggled, [this, row](bool checked) {
-      image_table_->item(row, 2)->setText(checked ? "true" : "false");
+      ui_->imageTable->item(row, 2)->setText(checked ? "true" : "false");
       OnImageConfigChanged(row);
     });
     
@@ -715,13 +710,13 @@ void DisplayConfigWidget::LoadConfig() {
       OnRemoveImageConfig(row);
     });
     
-    image_table_->setItem(row, 0, location_item);
-    image_table_->setItem(row, 1, topic_item);
-    image_table_->setItem(row, 2, enable_item);
-    image_table_->setCellWidget(row, 2, enable_checkbox);
-    image_table_->setCellWidget(row, 3, remove_btn);
+    ui_->imageTable->setItem(row, 0, location_item);
+    ui_->imageTable->setItem(row, 1, topic_item);
+    ui_->imageTable->setItem(row, 2, enable_item);
+    ui_->imageTable->setCellWidget(row, 2, enable_checkbox);
+    ui_->imageTable->setCellWidget(row, 3, remove_btn);
   }
-  image_table_->blockSignals(false);
+  ui_->imageTable->blockSignals(false);
   
   robot_points_table_->blockSignals(true);
   robot_points_table_->setRowCount(0);
@@ -795,9 +790,234 @@ void DisplayConfigWidget::LoadConfig() {
   rosbridge_port_edit_->setEnabled(show_rosbridge);
   
   is_loading_config_ = false;
+  RefreshNodeGroupList();
 }
 
 void DisplayConfigWidget::SaveConfig() {
   AutoSaveConfig();
+}
+
+void DisplayConfigWidget::InitNodeGroupTab() {
+  node_group_list_ = ui_->nodeGroupList;
+  group_name_edit_ = ui_->groupNameEdit;
+  group_critical_checkbox_ = ui_->groupCriticalCheckbox;
+  group_timeout_spinbox_ = ui_->groupTimeoutSpinbox;
+
+  ui_->nodeGroupSplitter->setSizes({130, 260});
+
+  connect(node_group_list_, &QListWidget::currentRowChanged, this, &DisplayConfigWidget::OnNodeGroupSelected);
+  connect(ui_->addGroupBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddNodeGroup);
+  connect(ui_->delGroupBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnDeleteNodeGroup);
+  connect(ui_->addNodeBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddExpectedNode);
+  connect(ui_->addTopicBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnAddHealthTopic);
+  connect(ui_->saveNodeGroupBtn, &QPushButton::clicked, this, &DisplayConfigWidget::OnSaveAndReloadNodeGroup);
+
+  RefreshNodeGroupList();
+}
+
+void DisplayConfigWidget::RefreshNodeGroupList() {
+  node_group_list_->blockSignals(true);
+  node_group_list_->clear();
+  auto &groups = Config::ConfigManager::Instance()->GetRootConfig().nodeGroup_config;
+  for (auto &g : groups) {
+    node_group_list_->addItem(QString::fromStdString(g.group_name));
+  }
+  node_group_list_->blockSignals(false);
+
+  if (current_group_index_ >= 0 && current_group_index_ < (int)groups.size()) {
+    node_group_list_->setCurrentRow(current_group_index_);
+  } else if (!groups.empty()) {
+    node_group_list_->setCurrentRow(0);
+  } else {
+    current_group_index_ = -1;
+    LoadGroupDetail(-1);
+  }
+}
+
+void DisplayConfigWidget::LoadGroupDetail(int index) {
+  current_group_index_ = index;
+  bool enabled = (index >= 0);
+  group_name_edit_->setEnabled(enabled);
+  group_critical_checkbox_->setEnabled(enabled);
+  group_timeout_spinbox_->setEnabled(enabled);
+  ui_->nodesScrollContent->setEnabled(enabled);
+  ui_->topicsScrollContent->setEnabled(enabled);
+
+  if (!enabled) {
+    group_name_edit_->clear();
+    group_critical_checkbox_->setChecked(false);
+    group_timeout_spinbox_->setValue(5);
+    RefreshNodesList();
+    RefreshTopicsList();
+    return;
+  }
+
+  auto &groups = Config::ConfigManager::Instance()->GetRootConfig().nodeGroup_config;
+  if (index >= (int)groups.size()) {
+    current_group_index_ = -1;
+    return;
+  }
+  auto &group = groups[index];
+  group_name_edit_->setText(QString::fromStdString(group.group_name));
+  group_critical_checkbox_->setChecked(group.critical);
+  group_timeout_spinbox_->setValue(group.timeout_seconds);
+  RefreshNodesList();
+  RefreshTopicsList();
+}
+
+void DisplayConfigWidget::RefreshNodesList() {
+  QLayoutItem *item;
+  while ((item = ui_->nodesScrollContent->layout()->takeAt(0)) != nullptr) {
+    if (item->widget()) item->widget()->deleteLater();
+    delete item;
+  }
+  if (current_group_index_ < 0) return;
+
+  auto &nodes = Config::ConfigManager::Instance()->GetRootConfig().nodeGroup_config[current_group_index_].expected_nodes;
+  for (const auto &node_name : nodes) {
+    QWidget *row = new QWidget(ui_->nodesScrollContent);
+    QHBoxLayout *row_layout = new QHBoxLayout(row);
+    row_layout->setContentsMargins(0, 1, 0, 1);
+    QLineEdit *edit = new QLineEdit(QString::fromStdString(node_name), row);
+    edit->setStyleSheet("QLineEdit { border:1px solid #d0d0d0; border-radius:4px; padding:3px; }");
+    QPushButton *del = new QPushButton("×", row);
+    del->setFixedSize(24, 24);
+    del->setStyleSheet("QPushButton { border:1px solid #f44336; border-radius:4px; color:#f44336; background:#fff; font-weight:bold; } QPushButton:hover { background:#f44336; color:#fff; }");
+    connect(del, &QPushButton::clicked, [row, del]() { del->disconnect(); row->deleteLater(); });
+    row_layout->addWidget(edit);
+    row_layout->addWidget(del);
+    ui_->nodesScrollContent->layout()->addWidget(row);
+  }
+}
+
+void DisplayConfigWidget::RefreshTopicsList() {
+  QLayoutItem *item;
+  while ((item = ui_->topicsScrollContent->layout()->takeAt(0)) != nullptr) {
+    if (item->widget()) item->widget()->deleteLater();
+    delete item;
+  }
+  if (current_group_index_ < 0) return;
+
+  auto &topics = Config::ConfigManager::Instance()->GetRootConfig().nodeGroup_config[current_group_index_].health_topics;
+  for (const auto &topic_name : topics) {
+    QWidget *row = new QWidget(ui_->topicsScrollContent);
+    QHBoxLayout *row_layout = new QHBoxLayout(row);
+    row_layout->setContentsMargins(0, 1, 0, 1);
+    QLineEdit *edit = new QLineEdit(QString::fromStdString(topic_name), row);
+    edit->setStyleSheet("QLineEdit { border:1px solid #d0d0d0; border-radius:4px; padding:3px; }");
+    QPushButton *del = new QPushButton("×", row);
+    del->setFixedSize(24, 24);
+    del->setStyleSheet("QPushButton { border:1px solid #f44336; border-radius:4px; color:#f44336; background:#fff; font-weight:bold; } QPushButton:hover { background:#f44336; color:#fff; }");
+    connect(del, &QPushButton::clicked, [row, del]() { del->disconnect(); row->deleteLater(); });
+    row_layout->addWidget(edit);
+    row_layout->addWidget(del);
+    ui_->topicsScrollContent->layout()->addWidget(row);
+  }
+}
+
+void DisplayConfigWidget::OnNodeGroupSelected(int row) {
+  LoadGroupDetail(row);
+}
+
+void DisplayConfigWidget::OnAddNodeGroup() {
+  auto &groups = Config::ConfigManager::Instance()->GetRootConfig().nodeGroup_config;
+  Config::NodeGroupConfig new_group;
+  new_group.group_name = "新节点组";
+  new_group.critical = false;
+  new_group.timeout_seconds = 5;
+  groups.push_back(new_group);
+  current_group_index_ = (int)groups.size() - 1;
+  RefreshNodeGroupList();
+}
+
+void DisplayConfigWidget::OnDeleteNodeGroup() {
+  if (current_group_index_ < 0) return;
+  auto &groups = Config::ConfigManager::Instance()->GetRootConfig().nodeGroup_config;
+  if (current_group_index_ >= (int)groups.size()) return;
+
+  auto reply = QMessageBox::question(this, "确认删除",
+      QString("确定要删除节点组 \"%1\" 吗？").arg(
+          QString::fromStdString(groups[current_group_index_].group_name)),
+      QMessageBox::Yes | QMessageBox::No);
+  if (reply != QMessageBox::Yes) return;
+
+  groups.erase(groups.begin() + current_group_index_);
+  current_group_index_ = -1;
+  RefreshNodeGroupList();
+  AutoSaveConfig();
+  PUBLISH(MSG_ID_RELOAD_NODE_GROUP_CONFIG, std::string(""));
+}
+
+void DisplayConfigWidget::OnAddExpectedNode() {
+  if (current_group_index_ < 0) return;
+  QWidget *row = new QWidget(ui_->nodesScrollContent);
+  QHBoxLayout *row_layout = new QHBoxLayout(row);
+  row_layout->setContentsMargins(0, 1, 0, 1);
+  QLineEdit *edit = new QLineEdit(row);
+  edit->setPlaceholderText("/node_name");
+  edit->setStyleSheet("QLineEdit { border:1px solid #d0d0d0; border-radius:4px; padding:3px; }");
+  QPushButton *del = new QPushButton("×", row);
+  del->setFixedSize(24, 24);
+  del->setStyleSheet("QPushButton { border:1px solid #f44336; border-radius:4px; color:#f44336; background:#fff; font-weight:bold; } QPushButton:hover { background:#f44336; color:#fff; }");
+  connect(del, &QPushButton::clicked, [row]() { row->deleteLater(); });
+  row_layout->addWidget(edit);
+  row_layout->addWidget(del);
+  ui_->nodesScrollContent->layout()->addWidget(row);
+  edit->setFocus();
+}
+
+void DisplayConfigWidget::OnAddHealthTopic() {
+  if (current_group_index_ < 0) return;
+  QWidget *row = new QWidget(ui_->topicsScrollContent);
+  QHBoxLayout *row_layout = new QHBoxLayout(row);
+  row_layout->setContentsMargins(0, 1, 0, 1);
+  QLineEdit *edit = new QLineEdit(row);
+  edit->setPlaceholderText("/topic_name");
+  edit->setStyleSheet("QLineEdit { border:1px solid #d0d0d0; border-radius:4px; padding:3px; }");
+  QPushButton *del = new QPushButton("×", row);
+  del->setFixedSize(24, 24);
+  del->setStyleSheet("QPushButton { border:1px solid #f44336; border-radius:4px; color:#f44336; background:#fff; font-weight:bold; } QPushButton:hover { background:#f44336; color:#fff; }");
+  connect(del, &QPushButton::clicked, [row]() { row->deleteLater(); });
+  row_layout->addWidget(edit);
+  row_layout->addWidget(del);
+  ui_->topicsScrollContent->layout()->addWidget(row);
+  edit->setFocus();
+}
+
+void DisplayConfigWidget::OnSaveAndReloadNodeGroup() {
+  if (current_group_index_ < 0) return;
+  auto &groups = Config::ConfigManager::Instance()->GetRootConfig().nodeGroup_config;
+  if (current_group_index_ >= (int)groups.size()) return;
+
+  auto &group = groups[current_group_index_];
+  group.group_name = group_name_edit_->text().toStdString();
+  group.critical = group_critical_checkbox_->isChecked();
+  group.timeout_seconds = group_timeout_spinbox_->value();
+
+  group.expected_nodes.clear();
+  for (int i = 0; i < ui_->nodesScrollContent->layout()->count(); i++) {
+    auto *item = ui_->nodesScrollContent->layout()->itemAt(i);
+    if (item && item->widget()) {
+      auto *edit = item->widget()->findChild<QLineEdit *>();
+      if (edit && !edit->text().trimmed().isEmpty())
+        group.expected_nodes.push_back(edit->text().trimmed().toStdString());
+    }
+  }
+
+  group.health_topics.clear();
+  for (int i = 0; i < ui_->topicsScrollContent->layout()->count(); i++) {
+    auto *item = ui_->topicsScrollContent->layout()->itemAt(i);
+    if (item && item->widget()) {
+      auto *edit = item->widget()->findChild<QLineEdit *>();
+      if (edit && !edit->text().trimmed().isEmpty())
+        group.health_topics.push_back(edit->text().trimmed().toStdString());
+    }
+  }
+
+  if (auto *list_item = node_group_list_->item(current_group_index_))
+    list_item->setText(QString::fromStdString(group.group_name));
+  AutoSaveConfig();
+  PUBLISH(MSG_ID_RELOAD_NODE_GROUP_CONFIG, std::string(""));
+  LOG_INFO("Node group config saved and reload triggered");
 }
 
